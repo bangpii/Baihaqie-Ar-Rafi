@@ -26,8 +26,8 @@ const greatVibes = Great_Vibes({
 });
 
 export const metadata: Metadata = {
-  title: "BangPii — Portfolio",
-  description: "Portfolio digital BangPii — holographic interactive experience.",
+  title: "Baihaqie Ar Rafi",
+  description: "Portfolio digital Baihaqie Ar Rafi — holographic interactive experience.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
