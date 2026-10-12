@@ -1,0 +1,319 @@
+/* The mobile portfolio.
+ *
+ *  A different page from the desk, not a reflow of it: no WebGL, no dive and no
+ *  paper shader, because a phone should not pay for a room it cannot walk into.
+ *  This element is the scroll container — the document itself is locked by
+ *  `globals.css` — and every colour is mixed from the same three theme tokens the
+ *  rest of the site uses, so light and dark still repaint the whole page. */
+
+.mobile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* The bar. Sticky rather than fixed so it scrolls with the document's own
+ *  offset and never needs a spacer element behind it. */
+.mobile-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 1.15rem;
+  padding-top: calc(0.7rem + env(safe-area-inset-top));
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  background: color-mix(in srgb, var(--background) 86%, transparent);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+}
+
+.mobile-nav__brand {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mobile-nav__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The toggle's base rule is absolutely positioned for the hero's corner; here it
+ *  is a normal control in the bar. */
+.mobile-nav .theme-toggle {
+  position: static;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.mobile-nav .theme-toggle svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.mobile-hero {
+  padding: clamp(2.25rem, 9vh, 4rem) 1.25rem 2.5rem;
+}
+
+.mobile-hero__name {
+  margin: 0;
+  font-size: clamp(2rem, 9.5vw, 2.75rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+
+/* A short accent rule, the one piece of furniture here: it gives the name a base
+ *  and separates it from the roles without a heading in between. */
+.mobile-hero__name::after {
+  content: "";
+  display: block;
+  width: 2.75rem;
+  height: 3px;
+  margin-top: 1.05rem;
+  border-radius: 9999px;
+  background: var(--accent);
+}
+
+.mobile-hero__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 1.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mobile-hero__roles li {
+  padding: 0.32rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  border-radius: 9999px;
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.mobile-hero__bio {
+  margin: 1.5rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 300;
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+}
+
+.mobile-projects {
+  padding: 2.25rem 1.25rem 3rem;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.mobile-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.mobile-section-head__title {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.mobile-section-head__count {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--foreground) 45%, transparent);
+}
+
+.mobile-projects__list {
+  display: grid;
+  gap: 1.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mobile-card {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--foreground) 4%, var(--background));
+}
+
+.mobile-card__media {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--foreground) 8%, var(--background));
+}
+
+.mobile-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.mobile-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.95rem 1rem 1.05rem;
+}
+
+.mobile-card__name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.mobile-card__role {
+  margin: -0.35rem 0 0;
+  color: var(--accent);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mobile-card__desc {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 300;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+}
+
+.mobile-card__tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mobile-card__tech li {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+  border-radius: 9999px;
+  font-size: 0.63rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+}
+
+.mobile-card__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.15rem;
+  margin-top: 0.15rem;
+}
+
+.mobile-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.mobile-card__link::after {
+  content: "→";
+  transition: transform 200ms ease;
+}
+
+.mobile-card__link:hover::after {
+  transform: translateX(3px);
+}
+
+.mobile-footer {
+  padding: 2.25rem 1.25rem calc(2.5rem + env(safe-area-inset-bottom));
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  background: color-mix(in srgb, var(--foreground) 3%, var(--background));
+}
+
+.mobile-footer__socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.35rem;
+  margin: 1rem 0 0;
+}
+
+.mobile-footer__socials a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: inherit;
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+.mobile-footer__socials svg {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  fill: currentColor;
+}
+
+.mobile-footer__socials a:hover {
+  color: var(--accent);
+}
+
+.mobile-footer__socials a:focus-visible,
+.mobile-card__link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.mobile-footer__note {
+  margin: 1.75rem 0 0;
+  font-size: 0.68rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--foreground) 48%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-card__link::after,
+  .mobile-footer__socials a {
+    transition-duration: 1ms;
+  }
+
+  .mobile-card__link:hover::after {
+    transform: none;
+  }
+}

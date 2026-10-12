@@ -1,0 +1,129 @@
+/* BootScreen — power-on, before the desktop.
+ *
+ *  Five beats, in order, and every one of them is a phase of the timeline below rather
+ *  than a step of JavaScript:
+ *
+ *    post   black. The fans spin up and the power lamp lights on the hardware while
+ *           the glass is still dark, so the monitor reads as the last thing to wake.
+ *    wipe   the dragon is wiped into place from its tail up — a clip, not a fade, so
+ *           the mark is *drawn* rather than revealed.
+ *    hold   the mark sits complete for a beat, the way a splash screen settles before
+ *           it does anything.
+ *    pulse  two shallow breaths over five seconds: the machine is alive and thinking.
+ *    out    the glass fades and scales up a touch as the desktop arrives underneath.
+ *
+ *  The mark is sized in `cqw` like everything on the glass: this element is projected
+ *  into 3D at a fixed 1180x665, so a `px` here would be a `px` on the authored element
+ *  and then shrink with the projection. */
+
+.screen--boot {
+  align-items: center;
+  justify-content: center;
+  background: var(--screen-bg);
+
+  /* The beats, as durations. The sum is `BOOT_DURATION_MS` in `BootScreen.tsx`; the
+     stylesheet and the timer that hands over to the desktop have to agree, so they are
+     written next to each other rather than one being derived from the other. */
+  --boot-post: 0.9s;
+  --boot-wipe: 3.4s;
+  --boot-hold: 0.5s;
+  --boot-pulse: 5s;
+  --boot-out: 0.6s;
+
+  /* One breath; two of these fill `--boot-pulse`. */
+  --boot-beat: 2.5s;
+}
+
+/* The hand-over points, as one expression each, so the phases cannot drift apart when a
+   duration is tuned: every beat is measured from the start of the sequence. */
+.screen--boot {
+  --boot-pulse-at: calc(var(--boot-post) + var(--boot-wipe) + var(--boot-hold));
+  --boot-out-at: calc(var(--boot-pulse-at) + var(--boot-pulse));
+}
+
+.boot {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Sized to the mark, so the fade at the end lifts the dragon and nothing else. */
+.boot__stage {
+  position: relative;
+  line-height: 0;
+  animation: boot-out var(--boot-out) ease-in var(--boot-out-at) forwards;
+}
+
+.boot__logo {
+  display: block;
+  width: 40cqw;
+  height: 40cqw;
+
+  /* The accent on its own, like the standby mark: a switched-on screen has a backlight
+     behind its colour, so the red is the red and not a red mixed down towards grey. */
+  color: var(--screen-accent);
+  will-change: clip-path, filter, transform;
+
+  /* Hidden to nothing by an inset that has clipped the whole box, then drawn upward:
+     as the top inset falls from 100% the visible band grows from the bottom edge, which
+     is the tail of the dragon. */
+  clip-path: inset(100% 0 0 0);
+  animation:
+    boot-wipe var(--boot-wipe) cubic-bezier(0.62, 0.02, 0.32, 1) var(--boot-post) forwards,
+    boot-pulse var(--boot-beat) ease-in-out var(--boot-pulse-at) 2 both;
+}
+
+@keyframes boot-wipe {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Two breaths rather than one long swell: a single rise across five seconds reads as a
+   fade, and the repeat is what makes it a pulse. The glow is the mark's own drop shadow,
+   so the light comes off the dragon instead of from a box behind it.
+ *
+ *  The swing is deliberately wide — the whole mark dims and brightens, not just its
+ *  halo. Five seconds of a quiet breath reads as "almost idle"; a mark that goes dark and
+ *  comes back is the thing that says the machine is *working* on something, which is what
+ *  is happening while the desktop loads. */
+@keyframes boot-pulse {
+  0%,
+  100% {
+    opacity: 0.68;
+    filter: brightness(0.82) drop-shadow(0 0 0.05em color-mix(in srgb, var(--screen-accent) 30%, transparent));
+    transform: scale(0.996);
+  }
+
+  50% {
+    opacity: 1;
+    filter: brightness(1.36) drop-shadow(0 0 1em color-mix(in srgb, var(--screen-accent) 100%, transparent));
+    transform: scale(1.02);
+  }
+}
+
+@keyframes boot-out {
+  to {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No wipe and no breath. The mark is simply there for the short beat the desktop
+     takes to arrive, because a ten-second hold with the motion stripped out has
+     nothing left in it. */
+  .boot__logo {
+    clip-path: none;
+    animation: none;
+  }
+
+  .boot__stage {
+    animation: none;
+  }
+}

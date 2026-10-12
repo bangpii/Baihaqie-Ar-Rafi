@@ -1,0 +1,428 @@
+/* RoomScenery — the room around the desk.
+ *
+ *  Every colour here is mixed from the eight `--desk-*` tokens, so the whole room
+ *  follows the theme from `globals.css` without this file knowing what a theme is.
+ *  Nothing here is interactive and nothing here animates except the dust: a room with
+ *  six things moving reads as a screensaver.
+ *
+ *  Sizes are `clamp()` against the viewport rather than fixed, because the station is
+ *  a full-viewport overlay that reflows from a 21" display down to a phone. Nothing is
+ *  positioned in pixels off a shared origin either — each layer is anchored to the box
+ *  it belongs to, so the mat stays beside the monitor instead of drifting to the edge
+ *  of the window when the keyboard rescales. */
+
+/* The field of points, at the back of the room.
+ *
+ *  It has to sit above the station's own opaque `--desk-surface` gradient, or the
+ *  gradient would hide it completely — so this is not "behind the background" but
+ *  "the first thing drawn on top of it". Everything else in the room is then free to
+ *  stack above this, which is why it needs no z-index of its own: DOM order already
+ *  puts it first, and the layer below it paints the desk surface. */
+.room__wave {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  /* The stage's own stacking context is z-index 1, so the field needs nothing to beat
+     it; the value is here to document the intent and to survive a reordering. */
+  z-index: 0;
+}
+
+.room__wave canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.room__wall,
+.room__desk {
+  position: absolute;
+  inset: 0;
+
+  /* Below everything that carries meaning, and above the station's own background —
+     the props have to be occluded by the monitor, not floating over it. */
+  z-index: 0;
+  pointer-events: none;
+}
+
+.room__desk {
+  /* Overhanging the stage on all three free sides: the desk continues past the
+     monitor's fitted box, and clipping the mat to the stage would draw a hard edge
+     across the desk at the exact width the stage happens to be today. */
+  inset: 0 -4% -7%;
+}
+
+/* Below the station's 900px breakpoint there are no rails, the stage goes full-bleed,
+   and the overhang stops meaning "past the monitor" and starts meaning "past the
+   window" — measured at 800px it pushed the mat off the left edge. So the desk takes
+   the stage exactly here. */
+@media (max-width: 900px) {
+  .room__desk {
+    inset: 0;
+  }
+}
+
+/* --- Light from a window off-frame ---------------------------------------- */
+
+/* Two sets of beams at the same angle: a fine one that reads as slats and a wide one
+   that gives the wall a slow swell behind them. The mask fades them out towards the
+   bottom-right, so the light has a direction instead of tiling the whole frame. */
+.room__shafts {
+  position: absolute;
+  inset: -35% -60% -30% -12%;
+  background-image:
+    repeating-linear-gradient(
+      114deg,
+      transparent 0 3.4rem,
+      var(--desk-shaft) 3.4rem 4.9rem,
+      transparent 4.9rem 9rem
+    ),
+    repeating-linear-gradient(
+      114deg,
+      transparent 0 11rem,
+      var(--desk-shaft) 11rem 14.4rem,
+      transparent 14.4rem 26rem
+    );
+  -webkit-mask-image: radial-gradient(64% 58% at 10% -4%, #000 0%, rgb(0 0 0 / 55%) 46%, transparent 78%);
+  mask-image: radial-gradient(64% 58% at 10% -4%, #000 0%, rgb(0 0 0 / 55%) 46%, transparent 78%);
+}
+
+/* --- The wall -------------------------------------------------------------- */
+
+/* Pinned notes, in the top-left corner the rails never reach. Sized against the
+   viewport so they stay in proportion to the wall rather than to the frame. */
+.room__pins {
+  position: absolute;
+  top: clamp(1.5rem, 5vh, 3.5rem);
+  left: clamp(1.5rem, 4vw, 4rem);
+  width: clamp(5rem, 8vw, 8.5rem);
+  height: clamp(3.4rem, 6vw, 6rem);
+}
+
+.room__pin {
+  position: absolute;
+  width: 46%;
+  height: 62%;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--desk-prop) 30%, var(--desk-wall)),
+    color-mix(in srgb, var(--desk-prop) 58%, var(--desk-wall))
+  );
+  box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--desk-vignette) 70%, transparent);
+}
+
+.room__pin--one {
+  top: 8%;
+  left: 0;
+  transform: rotate(-4deg);
+}
+
+.room__pin--two {
+  right: 0;
+  bottom: 4%;
+  transform: rotate(3.5deg);
+}
+
+/* The pin itself, in the accent: the one warm spot on a cool wall, and the reason
+   these two rectangles read as paper rather than as wallpaper. */
+.room__pin::before {
+  position: absolute;
+  top: -0.26rem;
+  left: 50%;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-left: -0.21rem;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  content: "";
+  opacity: 0.72;
+}
+
+/* Two hairlines of writing. Not text — text at this size would be legible and then
+   wrong, since there is nothing behind it worth reading. */
+.room__pin::after {
+  position: absolute;
+  top: 34%;
+  left: 16%;
+  width: 68%;
+  height: 38%;
+  background: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--desk-vignette) 85%, transparent) 0 2px,
+    transparent 2px 9px
+  );
+  content: "";
+}
+
+/* At night the notes borrow the print's palette.
+ *
+ *  On the cream wall the note's own prop-over-wall gradient already reads as paper,
+ *  but on the graphite one both ends of that gradient land within a level or two of
+ *  each other, and the writing — drawn in the vignette, which is black at night —
+ *  sinks into the note. So in dark mode the notes take the recipe of the print they
+ *  hang beside: the sheet over the wall for the paper, and the print's own ink for the
+ *  ruling, so the two things on this wall are drawn from one palette. Cream keeps the
+ *  gradient it already had. */
+:root[data-theme="dark"] .room__pin {
+  background: color-mix(in srgb, var(--desk-prop) 26%, var(--desk-wall));
+}
+
+:root[data-theme="dark"] .room__pin::after {
+  background: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 40%, transparent) 0 2px,
+    transparent 2px 9px
+  );
+}
+
+/* A print, hung crooked because somebody hung it. The frame is a stroke rather than a
+   filled rect so the sheet and the wall show through it. */
+.room__poster {
+  position: absolute;
+  top: clamp(1rem, 4vh, 3rem);
+  right: clamp(1.5rem, 4vw, 4.5rem);
+  width: clamp(4.5rem, 7.5vw, 7.5rem);
+  height: auto;
+  transform: rotate(2.5deg);
+  filter: drop-shadow(0 0.6rem 1.1rem color-mix(in srgb, var(--desk-vignette) 80%, transparent));
+}
+
+.room__poster-frame {
+  fill: none;
+  stroke: color-mix(in srgb, var(--desk-prop) 80%, var(--foreground));
+  stroke-width: 3;
+}
+
+/* Lift or deepen the sheet away from the wall by a small, deliberate amount in both
+   directions — 26% towards the prop tone darkens it on the cream wall and lifts it on
+   the ink one, which is the same gesture twice. */
+.room__poster-sheet {
+  fill: color-mix(in srgb, var(--desk-prop) 26%, var(--desk-wall));
+}
+
+.room__poster-ink {
+  fill: color-mix(in srgb, var(--foreground) 46%, transparent);
+}
+
+.room__poster-rule {
+  fill: none;
+  stroke: color-mix(in srgb, var(--foreground) 40%, transparent);
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.room__poster-rule--soft {
+  stroke-width: 2;
+  opacity: 0.7;
+}
+
+/* --- The desk -------------------------------------------------------------- */
+
+/* The mat. It is mostly behind the keyboard slab; what reads is the strip above it
+   and the two ends, which is the only part of a mat you ever see. */
+.room__mat {
+  position: absolute;
+  right: 0;
+  bottom: -6%;
+  left: 0;
+  height: 30%;
+  border-radius: 40% 40% 0 0 / 26% 26% 0 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--desk-prop) 42%, transparent),
+    color-mix(in srgb, var(--desk-prop) 10%, transparent)
+  );
+  box-shadow: 0 -1.2rem 2.6rem color-mix(in srgb, var(--desk-vignette) 55%, transparent);
+}
+
+/* The occlusion behind the monitor.
+ *
+ *  This is the element that makes the hardware read as an object. On the light theme
+ *  the body is `#e7e4dd` and the wall is `#b8b3a4` — measured at 1.65:1, which no amount
+ *  of contrast tuning can push much past and which is also true of a real photograph: a
+ *  pale monitor on a pale wall is separated by its shadow, not by its value. On the dark
+ *  theme the wall is deliberately the lighter of the two (1.66:1 the other way round)
+ *  and the accent glow from the screen does the rest. Blurred rather than drawn,
+ *  because a hard-edged shadow behind a soft object is the tell that the scene is a
+ *  diagram.
+ *
+ *  Stopped at the board's back edge — `--desk-horizon-rig`, written by the same solve
+ *  that writes the band — because a shadow belongs to the surface it is cast on and
+ *  must not keep going where that surface has ended. Held at 36% for the same reason:
+ *  it darkens the wall and the board's far lip, it does not veil the desk the machines
+ *  are standing on. The 96% fallback is the original `bottom: 4%`, for the frames
+ *  before the first solve and the pages with no desk mounted. */
+.room__shadow {
+  position: absolute;
+  top: 3%;
+  right: 13%;
+  bottom: calc(100% - var(--desk-horizon-rig, 96%));
+  left: 13%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--desk-vignette) 80%, transparent);
+  filter: blur(clamp(1.5rem, 4vw, 4rem));
+  opacity: 0.36;
+}
+
+/* --- Dust in the light ----------------------------------------------------- */
+
+/* Five motes, placed by hand through `:nth-child` rather than by inline styles: the
+   variations are a dozen declarations each, they never change at runtime, and writing
+   them into the markup would mean a custom property per span for no gain. All of them
+   sit in the lower-left where the shafts land, because dust that drifts through dark
+   air is invisible and dust in a beam is the only version worth rendering. */
+.room__motes {
+  position: absolute;
+  inset: 0;
+}
+
+.room__mote {
+  position: absolute;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--desk-glow-core) 60%, var(--desk-shaft));
+  animation: room-mote 26s linear infinite;
+}
+
+.room__mote:nth-child(1) {
+  top: 68%;
+  left: 9%;
+  width: 3px;
+  height: 3px;
+}
+
+.room__mote:nth-child(2) {
+  top: 80%;
+  left: 17%;
+  width: 2px;
+  height: 2px;
+  animation-duration: 21s;
+  animation-delay: -9s;
+}
+
+.room__mote:nth-child(3) {
+  top: 74%;
+  left: 27%;
+  width: 4px;
+  height: 4px;
+  animation-duration: 30s;
+  animation-delay: -16s;
+}
+
+.room__mote:nth-child(4) {
+  top: 86%;
+  left: 13%;
+  width: 2px;
+  height: 2px;
+  animation-duration: 24s;
+  animation-delay: -5s;
+}
+
+.room__mote:nth-child(5) {
+  top: 88%;
+  left: 35%;
+  width: 3px;
+  height: 3px;
+  animation-duration: 28s;
+  animation-delay: -21s;
+}
+
+@keyframes room-mote {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+
+  18%,
+  72% {
+    opacity: 0.22;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(1.8rem, -9rem, 0);
+  }
+}
+
+/* --- The light the screen throws ------------------------------------------ */
+
+/* Last in the markup, so it falls over the objects rather than under them — and still
+ *  behind the monitor, because `MonitorScene`'s canvas is a later sibling of this whole
+ *  layer and the WebGL renderer is transparent.
+ *
+ *  Powered state is a class, not a per-frame write: the scene's own backlight ramps at
+ *  a rate that a 1100ms transition tracks closely enough, and it costs one property
+ *  change instead of a style recalculation on every frame of an already busy loop.
+ *
+ *  Painted in `--desk-spill` rather than `--desk-glow`, and at a fraction of the
+ *  strength. Both halves of that are the same fix: this is light *landing on a wall*, so
+ *  its colour has to be the wall's own colour carrying the screen's tint, and its
+ *  strength has to be small enough that the wall's texture is still visible through it.
+ *  The accent at full strength did neither — it redrew a third of the room in flat red
+ *  the instant the machine came on, which is the "sudden aura" rather than a light.
+ *
+ *  Tightened as well as dimmed. The old gradient was an 86%-by-74% ellipse covering
+ *  more than the monitor, so the glow had to be seen past the machine on both sides to
+ *  exist at all; a smaller ellipse reaches the wall the monitor is standing in front of,
+ *  which is the only part of it a screen can actually light. */
+.room__pool {
+  position: absolute;
+  inset: -3% -6% 6%;
+  background-image:
+    radial-gradient(42% 38% at 50% 46%, var(--desk-spill-core) 0%, transparent 72%),
+    radial-gradient(68% 56% at 50% 52%, var(--desk-spill) 0%, transparent 76%),
+    linear-gradient(to bottom, transparent 66%, color-mix(in srgb, var(--desk-contact) 45%, transparent) 100%);
+  opacity: 0.1;
+  transition: opacity 1100ms cubic-bezier(0.22, 0.61, 0.24, 1);
+}
+
+.station--on .room__pool {
+  opacity: 0.44;
+}
+
+/* Screen light spill onto the desk surface, directly in front of the monitor's base.
+ * Subtler than the wall pool, warmer with the accent, and on only when powered.
+ * Sized relative to the stage so it feels proportional at any window size. */
+.room__deskp {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 11%;
+  width: clamp(14rem, 28vw, 22rem);
+  height: clamp(6rem, 14vw, 10rem);
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0;
+  transition: opacity 1100ms cubic-bezier(0.22, 0.61, 0.24, 1);
+  background: radial-gradient(
+    54% 42% at 50% 48%,
+    color-mix(in srgb, var(--desk-spill-core) 38%, transparent) 0%,
+    color-mix(in srgb, var(--desk-spill) 22%, transparent) 44%,
+    transparent 78%
+  );
+}
+
+.station--on .room__deskp {
+  opacity: 0.26;
+}
+
+/* The dust stops drifting, but it does not disappear: dust that has settled is a
+   different picture than dust that has gone. */
+@media (prefers-reduced-motion: reduce) {
+  .room__mote {
+    animation: none;
+  }
+
+  .room__mote {
+    opacity: 0.18;
+  }
+
+  .room__pool {
+    transition: none;
+  }
+
+  .room__deskp {
+    transition: none;
+  }
+}

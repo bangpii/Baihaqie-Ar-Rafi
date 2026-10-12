@@ -1,0 +1,490 @@
+.hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Backdrop stack, bottom to top: crumpled paper, script name, light rays,
+   dithered portrait, click hint, corner UI. */
+.hero__paper {
+  z-index: 0;
+}
+
+.hero__rays {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+/* Dive-zoom layer: paper, rays, portrait, name, hint and corner UI all scale
+   about the centre together. Leaving the backdrop still was tried first and it
+   inverts the effect - with nothing else moving, the dive ends by uncovering
+   the untouched paper and rays again, which reads as the page undoing itself
+   rather than as depth.
+
+   `.hero` already sets `overflow: hidden` at viewport height, so the scaled
+   layer is clipped there and never adds document overflow: the page still
+   cannot scroll. The children keep their own z-indexes, which `transform` now
+   scopes to this element, but DOM order runs paper -> rays -> portrait -> hint
+   -> corners, so the paint order still matches what those numbers asked for. */
+.hero-zoom {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.hero .dither-veil {
+  z-index: 3;
+}
+
+.hero-hint {
+  z-index: 4;
+}
+
+.hero .swiss-ui {
+  z-index: 5;
+}
+
+@media (max-width: 639px) {
+  .hero .veil--mobile {
+    position: absolute;
+    left: -1%;
+    top: -1%;
+    width: 102%;
+    height: 102%;
+  }
+}
+
+.theme-toggle {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: inherit;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.theme-toggle svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.swiss-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 500ms ease,
+    visibility 0s linear 500ms;
+}
+
+.hero.is-revealed .swiss-ui {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 700ms ease,
+    visibility 0s linear 0s;
+}
+
+.corner,
+.hero-name {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero.is-revealed .corner,
+.hero.is-revealed .hero-name {
+  opacity: 1;
+  transform: none;
+}
+
+.hero.is-revealed .corner--tl {
+  transition-delay: 250ms;
+}
+
+.hero.is-revealed .corner--tr {
+  transition-delay: 350ms;
+}
+
+.hero.is-revealed .hero-name {
+  transition-delay: 450ms;
+}
+
+.hero.is-revealed .corner--bl {
+  transition-delay: 550ms;
+}
+
+.hero.is-revealed .corner--br {
+  transition-delay: 650ms;
+}
+
+.hero.is-revealed .corner a,
+.hero.is-revealed .lang-toggle button,
+.hero.is-revealed .theme-toggle {
+  pointer-events: auto;
+}
+
+.hero-hint {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(1.5rem, 3vh, 2.5rem);
+  translate: -50% 0;
+  margin: 0;
+  padding: 0.42rem 0.9rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.06);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  font-family:
+    var(--font-poppins), var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  /* Letter-spacing lands after the last glyph too, so the pill's box is wider
+   * than the text inside it and translate(-50%) centres the box, not the words -
+   * the whole label sits a hair left of centre. Padding-left is the same trick
+   * the letterforms need, and cancels it. */
+  padding-left: calc(0.9rem + 0.2em);
+  text-transform: uppercase;
+  color: currentColor;
+  pointer-events: none;
+  opacity: 1;
+  animation: hint-bob 2.6s ease-in-out infinite;
+  transition: opacity 400ms ease;
+}
+
+.hero.is-revealed .hero-hint {
+  opacity: 0;
+  animation: none;
+}
+
+@keyframes hint-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+.corner--tl {
+  position: absolute;
+  top: clamp(2rem, 5vh, 3.5rem);
+  left: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.corner--tr {
+  position: absolute;
+  top: clamp(2rem, 5vh, 3.5rem);
+  right: clamp(1.5rem, 4vw, 3.5rem);
+  max-width: 27rem;
+  text-align: right;
+}
+
+.corner--bl {
+  position: absolute;
+  bottom: clamp(1.5rem, 4vh, 2.5rem);
+  left: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.corner--br {
+  position: absolute;
+  right: clamp(1.25rem, 4vw, 1.5rem);
+  bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  max-width: 20rem;
+}
+
+.corner--br__toggles {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.corner-bio {
+  margin: 0.35rem 0 0;
+  max-width: 18rem;
+  font-size: 0.75rem;
+  font-weight: 300;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  text-align: right;
+}
+
+.hero .swiss-ui .theme-toggle {
+  position: static;
+}
+
+.corner-label {
+  margin: 0 0 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.corner-label--meta {
+  margin-top: 1.1rem;
+}
+
+.corner-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  font-weight: 300;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+
+/* Was one run-on line of eight skills joined by "· ", which read as filler: the
+ * eye had no entry point. A two-column list gives it the same shape as the roles
+ * list opposite it, and row-for-row it lands at 4 against that list's 3 - which is
+ * also why TR was reading taller than it looked. */
+.corner-grid {
+  display: grid;
+  /* 16 skills, and 16 divides by 4 - so a square 4x4 whose height lands within a few
+   * pixels of the roles list opposite it. Two columns would have made this corner
+   * eight rows tall against that list's three and thrown the top row out of
+   * balance. The width is set rather than left to fit-content because the longest
+   * label, "Node Express", decides the column count, and fit-content plus
+   * auto-fit is circular. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 25rem;
+  gap: 0.15rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  font-weight: 300;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+}
+
+.corner-socials {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.corner-socials a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: inherit;
+  text-decoration: none;
+  transition: color 200ms ease;
+}
+
+/* Sized off the text rather than fixed, so the mark sits on the label's optical
+ * centre and stays put if the corner type scale changes. Filled glyphs read as
+ * heavier than the letterforms next to them, so a hair over 1em.
+ * Not smaller: measured at 10px the Instagram corner dot and the globe meridians
+ * fall under a pixel and both glyphs turn to mush, while the envelope and the
+ * LinkedIn mark survive that size intact. */
+.corner-socials svg {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+  fill: currentColor;
+}
+
+.corner-socials a:hover {
+  color: var(--accent);
+}
+
+.corner-socials a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.corner-school {
+  margin: 0.85rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, currentColor 72%, transparent);
+}
+
+.corner-status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, currentColor 72%, transparent);
+}
+
+.corner-status__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: status-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 0.28rem color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+.corner-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 300;
+  letter-spacing: 0.03em;
+}
+
+.hero-name {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  z-index: 1;
+  margin: 0;
+  font-family: var(--font-script);
+  font-size: clamp(4rem, 8vw, 10rem);
+  line-height: 1.08;
+  text-align: center;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: inherit;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.lang-toggle button {
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+  transition:
+    opacity 200ms ease,
+    background-color 200ms ease;
+}
+
+.lang-toggle button:hover {
+  opacity: 1;
+}
+
+.lang-toggle button.is-active {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.lang-toggle button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .swiss-ui {
+    display: none;
+  }
+
+  .hero__paper,
+  .hero__rays {
+    display: none;
+  }
+
+  .hero-name {
+    display: none;
+  }
+
+  .hero-hint {
+    display: none;
+  }
+}
+
+/* Two loops were running with no opt-out: the hint bob and the status pulse. Both
+ * are pure decoration, and a reduced-motion visitor should get neither. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-hint {
+    animation: none;
+  }
+
+  .corner-status__dot {
+    animation: none;
+  }
+
+  .corner,
+  .corner-label,
+  .hero-name,
+  .hero-hint {
+    transition-duration: 1ms;
+  }
+}

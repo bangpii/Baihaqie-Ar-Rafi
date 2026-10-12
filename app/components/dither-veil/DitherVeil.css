@@ -1,0 +1,48 @@
+.dither-veil {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.dither-veil__fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.dither-veil__fallback img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: grayscale(100%) contrast(1.18) brightness(1.03);
+  transition: filter 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: crosshair;
+}
+
+.dither-veil__fallback:hover img {
+  filter: grayscale(0%) contrast(1.02) brightness(1);
+}
+
+.dither-veil__fallback::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 2px,
+    rgb(0 0 0 / 0.035) 2px 3px
+  );
+  mix-blend-mode: multiply;
+}
+
+@media (max-width: 639px) {
+  .dither-veil__fallback img {
+    object-fit: cover;
+  }
+}

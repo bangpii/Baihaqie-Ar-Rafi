@@ -1,0 +1,148 @@
+/* ShutdownScreen — power-off, after the desktop.
+ *
+ *  Four beats, in order, and every one of them is a phase of the timeline below rather
+ *  than a step of JavaScript:
+ *
+ *    scrim   the desktop darkens to black. The overlay's own background fades up over
+ *            the windows, so the room's light goes out before the machine does — a
+ *            screen that cut straight to black would read as a glitch, not a close.
+ *    in      the dragon settles back into the middle, the way it arrived: reading the
+ *            desktop means reading the mark that owns it, and going down returns to it.
+ *    settle  one slow breath — the mark brightens once and sinks back as the machine
+ *            closes everything out. One, not two: a repeated breath reads as *alive*,
+ *            and a machine going down is not.
+ *    drain   the glow runs out and the mark fades to nothing, leaving the dark that the
+ *            standby mark is about to appear in.
+ *
+ *  The mark is sized in `cqw` like everything on the glass: this element is projected
+ *  into 3D at a fixed 1180x665, so a `px` here would be a `px` on the authored element
+ *  and then shrink with the projection. */
+
+.screen__shutdown {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Darks up over the windows (see `--shut-scrim`) rather than arriving already opaque:
+     set to the end colour and animated up from a transparent start. */
+  background-color: var(--screen-bg);
+
+  /* The beats, as durations. The sum is `SHUTDOWN_DURATION_MS` in `ShutdownScreen.tsx`;
+     the stylesheet and the timer that cuts power have to agree, so they are written next
+     to each other rather than one being derived from the other. */
+  --shut-scrim: 0.5s;
+  --shut-in: 0.7s;
+  --shut-settle: 1.4s;
+  --shut-out: 0.8s;
+
+  animation: shutdown-scrim var(--shut-scrim) linear forwards;
+}
+
+/* The hand-over points, as one expression each, so the phases cannot drift apart when a
+   duration is tuned: every beat is measured from the start of the sequence. */
+.screen__shutdown {
+  --shut-in-at: var(--shut-scrim);
+  --shut-settle-at: calc(var(--shut-scrim) + var(--shut-in));
+  --shut-out-at: calc(var(--shut-scrim) + var(--shut-in) + var(--shut-settle));
+}
+
+.shutdown {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Sized to the mark, so the drain at the end lifts the dragon and nothing else. */
+.shutdown__stage {
+  position: relative;
+  line-height: 0;
+}
+
+/* The accent on its own, like the boot and standby marks: a lit screen has a backlight
+   behind its colour, so the red is the red and not a red mixed down towards grey. */
+.shutdown__logo {
+  display: block;
+  width: 26cqw;
+  height: 26cqw;
+
+  color: var(--screen-accent);
+  opacity: 0;
+  will-change: opacity, filter, transform;
+  animation:
+    shutdown-in var(--shut-in) ease-out var(--shut-in-at) both,
+    shutdown-settle var(--shut-settle) ease-in-out var(--shut-settle-at) both,
+    shutdown-drain var(--shut-out) ease-in var(--shut-out-at) both;
+}
+
+@keyframes shutdown-scrim {
+  from {
+    background-color: transparent;
+  }
+
+  to {
+    background-color: var(--screen-bg);
+  }
+}
+
+/* Rises rather than pops: a mark appearing complete over a black that is still arriving
+   reads as a hard cut. Every transform carries the mark's `translateX(-7.4%)` centring,
+   because a keyframe that omits it would jump the dragon off-centre for its duration. */
+@keyframes shutdown-in {
+  from {
+    opacity: 0;
+    transform: translateX(-7.4%) scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-7.4%) scale(1);
+  }
+}
+
+/* One breath, built exactly like the boot's `boot-pulse` so the two read as the same
+   machine — the whole mark dims and brightens with its own glow, not a box behind it.
+   It runs once: the count is what turns "alive" into "closing", and the boot's repeat
+   is the thing being answered here. */
+@keyframes shutdown-settle {
+  0%,
+  100% {
+    opacity: 0.7;
+    filter: brightness(0.85) drop-shadow(0 0 0.06em color-mix(in srgb, var(--screen-accent) 30%, transparent));
+    transform: translateX(-7.4%) scale(0.996);
+  }
+
+  50% {
+    opacity: 1;
+    filter: brightness(1.3) drop-shadow(0 0 0.9em color-mix(in srgb, var(--screen-accent) 100%, transparent));
+    transform: translateX(-7.4%) scale(1.015);
+  }
+}
+
+/* The glow goes first and the mark follows it: dropping the light while the silhouette
+   is still there is the backlight dying, which is what a power-off is. */
+@keyframes shutdown-drain {
+  to {
+    opacity: 0;
+    filter: none;
+    transform: translateX(-7.4%) scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The JavaScript hands over to the standby immediately under reduced motion, so this
+     never renders. If it somehow does, the mark is simply there and the sequence is a
+     single dark beat with nothing moving. */
+  .screen__shutdown {
+    animation: none;
+  }
+
+  .shutdown__logo {
+    animation: none;
+    opacity: 1;
+  }
+}

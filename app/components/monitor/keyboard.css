@@ -1,0 +1,393 @@
+/* Keyboard — sits under the monitor.
+ *
+ *  The slab is never resized and never reflows: its metrics are fixed in rem and
+ *  the station scales the whole thing with a transform to fit the width it is
+ *  given. A keyboard whose rows wrapped would stop being the keyboard it is
+ *  imitating, so nothing in this file reacts to a breakpoint.
+ *
+ *  What the whole file is now doing is one job: making sixty caps read as caps.
+ *  Lifting them out of the board is done with *lightness relative to the board plus a
+ *  shadow underneath*, never with the tokens' own direction — `--foreground` is ink in
+ *  the light theme and light in the dark one, so any rule of the form "caps are
+ *  lighter than the board" written in tokens is true in one theme and exactly inverted
+ *  in the other. Translucent white is not a token and so points the same way in both,
+ *  which is what lets one sheet of CSS describe a raised key on a cream desk and on a
+ *  black one. */
+
+.keyboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The board: a case with a machined lip around it, and the object that sits on the
+ *  desk rather than being drawn on it. Its top face takes a little of the foreground so
+ *  that the sixty pale caps in front of it have something to be pale against. */
+.keyboard__slab {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  background: color-mix(in srgb, var(--foreground) 11%, var(--background));
+  box-shadow:
+    /* the machined lip along the top edge */
+    inset 0 0.0625rem 0 color-mix(in srgb, var(--foreground) 18%, transparent),
+    /* and the board's own thickness, which is what puts it *on* the desk */
+    0 0.125rem 0.375rem color-mix(in srgb, var(--foreground) 28%, transparent);
+  transition:
+    background-color 700ms ease,
+    box-shadow 700ms ease;
+}
+
+.keyboard__row {
+  display: flex;
+  gap: 0.125rem;
+}
+
+/* The shell is the recess a cap sits in: the gap between two keys, which on a real
+ *  board is the only part of it you can see the case through. Near-background rather
+ *  than a mix of the tokens, so it is the same depth on the desk in both themes, with
+ *  its own inner shadow to say "this part of the board is lower than the rest". */
+.keyboard__key {
+  display: flex;
+  padding: 0.03125rem;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--background) 76%, transparent);
+  box-shadow: inset 0 0.03125rem 0.0625rem rgb(0 0 0 / 26%);
+  transition:
+    box-shadow 100ms ease,
+    transform 100ms ease;
+}
+
+/* The cap itself, standing off its recess.
+ *
+ *  The first two shadows are the lift: an ambient drop and a tighter contact shadow,
+ *  both plain black rather than token mixes, because a shadow darkens in both themes
+ *  and nothing in the palette says "dark" without also saying which theme it is in.
+ *  The insets are the bevel — light along the top edge, dark where the cap meets its
+ *  seat — and they are what stops the cap looking like a sticker. */
+.keyboard__cap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.21875rem;
+  background: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 14%),
+    rgb(255 255 255 / 7%)
+  );
+  box-shadow:
+    0 0.0625rem 0.0625rem -0.03125rem rgb(0 0 0 / 46%),
+    0 0.015625rem 0.03125rem rgb(0 0 0 / 26%),
+    inset 0 0.03125rem 0 rgb(255 255 255 / 14%),
+    inset 0 -0.03125rem 0.0625rem rgb(0 0 0 / 30%);
+}
+
+/* Arrow keys are half-height, so their cap needs a shallower lip or the bevel
+   reads as a full-height key that has been squashed. */
+.keyboard__cap--shallow {
+  box-shadow:
+    0 0.0625rem 0.0625rem -0.03125rem rgb(0 0 0 / 46%),
+    0 0.015625rem 0.03125rem rgb(0 0 0 / 26%),
+    inset 0 0.03125rem 0 rgb(255 255 255 / 14%),
+    inset 0 -0.03125rem 0.0625rem rgb(0 0 0 / 22%);
+}
+
+/* Big enough to read.
+ *
+ *  6px was the size that made this keyboard unclear: legible as "there are letters on
+ *  those keys", not as a keyboard you could name a key on. 7px is the largest step that
+ *  still fits the narrowest cap — the 32px `command` cap — without a word wrapping,
+ *  which is the one thing these labels must never do, since a wrapped `command` reads as
+ *  a two-key legend rather than one key. */
+.keyboard__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0 0.09375rem;
+  gap: 0.14rem;
+  font-size: 0.4375rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--foreground) 82%, transparent);
+}
+
+.keyboard__label--start {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.keyboard__label--end {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.keyboard__label--center {
+  align-items: center;
+  text-align: center;
+}
+
+/* Keys that print a glyph above a word push them to the two ends of the cap. */
+.keyboard__label--stack {
+  gap: 0.09rem;
+}
+
+.keyboard__label--spread {
+  justify-content: space-between;
+  padding-bottom: 0.09375rem;
+  padding-top: 0.09375rem;
+}
+
+.keyboard__label-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.keyboard__glyph {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  flex: 0 0 auto;
+}
+
+.keyboard__mark {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--foreground) 66%, transparent);
+}
+
+/* --- Powered --------------------------------------------------------------- */
+
+/* The board is the only part of the keyboard that is lit, and only a little: at this
+ *  size the slab is a 440px sliver of desk, so anything stronger than a tint stops
+ *  reading as a lit keyboard and starts reading as a lamp with keys printed on it. The
+ *  accent arrives as a wash over the top face — the side that faces the screen — and as
+ *  a glow underneath, which is the direction light actually leaves a keyboard in.
+ *
+ *  Ramped on the same 700ms as the screen's own backlight rather than snapping with
+ *  it: a keyboard that changed colour instantly beside a screen that took 700ms to
+ *  warm up read as two separate switches being thrown. */
+.station--on .keyboard__slab {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent) 14%, transparent),
+    color-mix(in srgb, var(--accent) 4%, transparent)
+  );
+  box-shadow:
+    inset 0 0.0625rem 0 color-mix(in srgb, var(--foreground) 18%, transparent),
+    0 0.125rem 0.375rem color-mix(in srgb, var(--foreground) 28%, transparent),
+    0 0.0625rem 1.25rem -0.25rem color-mix(in srgb, var(--accent) 34%, transparent);
+}
+
+/* The caps darken slightly under the accent rather than lightening with it. A cap that
+ *  brightened would compete with the screen's own glow; the ones nearest the back edge
+ *  are the only ones the light reaches, and a keyboard lit from the monitor is lit on
+ *  its far row. */
+.station--on .keyboard__cap {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--accent) 10%, rgb(255 255 255 / 11%)),
+    color-mix(in srgb, var(--accent) 4%, rgb(255 255 255 / 6%))
+  );
+}
+
+.keyboard__dial {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  padding: 1px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--foreground) 22%, transparent),
+    color-mix(in srgb, var(--background) 70%, transparent) 50%,
+    color-mix(in srgb, var(--foreground) 22%, transparent)
+  );
+}
+
+.keyboard__dial::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--background) 92%, var(--foreground));
+}
+
+.keyboard__arrows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 4.9rem;
+  height: 1.5rem;
+  margin-top: 0.125rem;
+  padding: 0.03125rem;
+  border-radius: 0.25rem;
+}
+
+.keyboard__arrows-row {
+  display: flex;
+  gap: 0.125rem;
+}
+
+/* Live key feedback.
+ *
+ *  Driven by one attribute on an ancestor rather than a class per cap: the station
+ *  writes the key that was pressed onto `data-live-key`, and this finds the cap
+ *  carrying the same `data-key`. Sixty state updates per keystroke would re-render
+ *  the entire keyboard; one attribute change does not. */
+/* Letters and digits, which is to say most of what anyone actually types.
+ *
+ *  This block is the one that was missing, and its absence was invisible in review:
+ *  the named keys below all had rules, so pressing Escape lit up, which looked like the
+ *  whole system working. But there was no selector for `a` or `7`, so the attribute
+ *  was set, the cap did not move, and typing read as typing into a void — the exact
+ *  complaint this feedback exists to answer.
+ *
+ *  The values are the *base* key, not what was typed: shift+1 lights `1`, and shift+a
+ *  lights `a`. Spelling that out here rather than in the press handler is what keeps
+ *  a shifted character lighting the same cap as its unshifted twin.
+ *
+ *  Enumerated rather than written as `[data-live-key] [data-key]`, because that
+ *  shorthand lights every cap at once. CSS cannot compare two attribute values, so the
+ *  list is the price of matching one against the other without a re-render per key. */
+[data-live-key="a"] [data-key="a"],
+[data-live-key="b"] [data-key="b"],
+[data-live-key="c"] [data-key="c"],
+[data-live-key="d"] [data-key="d"],
+[data-live-key="e"] [data-key="e"],
+[data-live-key="f"] [data-key="f"],
+[data-live-key="g"] [data-key="g"],
+[data-live-key="h"] [data-key="h"],
+[data-live-key="i"] [data-key="i"],
+[data-live-key="j"] [data-key="j"],
+[data-live-key="k"] [data-key="k"],
+[data-live-key="l"] [data-key="l"],
+[data-live-key="m"] [data-key="m"],
+[data-live-key="n"] [data-key="n"],
+[data-live-key="o"] [data-key="o"],
+[data-live-key="p"] [data-key="p"],
+[data-live-key="q"] [data-key="q"],
+[data-live-key="r"] [data-key="r"],
+[data-live-key="s"] [data-key="s"],
+[data-live-key="t"] [data-key="t"],
+[data-live-key="u"] [data-key="u"],
+[data-live-key="v"] [data-key="v"],
+[data-live-key="w"] [data-key="w"],
+[data-live-key="x"] [data-key="x"],
+[data-live-key="y"] [data-key="y"],
+[data-live-key="z"] [data-key="z"],
+[data-live-key="0"] [data-key="0"],
+[data-live-key="1"] [data-key="1"],
+[data-live-key="2"] [data-key="2"],
+[data-live-key="3"] [data-key="3"],
+[data-live-key="4"] [data-key="4"],
+[data-live-key="5"] [data-key="5"],
+[data-live-key="6"] [data-key="6"],
+[data-live-key="7"] [data-key="7"],
+[data-live-key="8"] [data-key="8"],
+[data-live-key="9"] [data-key="9"],
+[data-live-key="-"] [data-key="-"],
+[data-live-key="="] [data-key="="],
+[data-live-key="["] [data-key="["],
+[data-live-key="]"] [data-key="]"],
+[data-live-key="\\"] [data-key="\\"],
+[data-live-key=";"] [data-key=";"],
+[data-live-key="'"] [data-key="'"],
+[data-live-key=","] [data-key=","],
+[data-live-key="."] [data-key="."],
+[data-live-key="/"] [data-key="/"],
+[data-live-key="`"] [data-key="`"],
+[data-live-key="escape"] [data-key="escape"],
+[data-live-key="tab"] [data-key="tab"],
+[data-live-key="delete"] [data-key="delete"],
+[data-live-key="capslock"] [data-key="capslock"],
+[data-live-key="enter"] [data-key="enter"],
+[data-live-key="shift"] [data-key="shift"],
+[data-live-key="control"] [data-key="control"],
+[data-live-key="alt"] [data-key="alt"],
+[data-live-key="meta"] [data-key="meta"],
+[data-live-key=" "] [data-key=" "],
+[data-live-key="arrowup"] [data-key="arrowup"],
+[data-live-key="arrowdown"] [data-key="arrowdown"],
+[data-live-key="arrowleft"] [data-key="arrowleft"],
+[data-live-key="arrowright"] [data-key="arrowright"] {
+  transform: translateY(0.03125rem);
+  box-shadow: none;
+}
+
+[data-live-key="a"] [data-key="a"] .keyboard__cap,
+[data-live-key="b"] [data-key="b"] .keyboard__cap,
+[data-live-key="c"] [data-key="c"] .keyboard__cap,
+[data-live-key="d"] [data-key="d"] .keyboard__cap,
+[data-live-key="e"] [data-key="e"] .keyboard__cap,
+[data-live-key="f"] [data-key="f"] .keyboard__cap,
+[data-live-key="g"] [data-key="g"] .keyboard__cap,
+[data-live-key="h"] [data-key="h"] .keyboard__cap,
+[data-live-key="i"] [data-key="i"] .keyboard__cap,
+[data-live-key="j"] [data-key="j"] .keyboard__cap,
+[data-live-key="k"] [data-key="k"] .keyboard__cap,
+[data-live-key="l"] [data-key="l"] .keyboard__cap,
+[data-live-key="m"] [data-key="m"] .keyboard__cap,
+[data-live-key="n"] [data-key="n"] .keyboard__cap,
+[data-live-key="o"] [data-key="o"] .keyboard__cap,
+[data-live-key="p"] [data-key="p"] .keyboard__cap,
+[data-live-key="q"] [data-key="q"] .keyboard__cap,
+[data-live-key="r"] [data-key="r"] .keyboard__cap,
+[data-live-key="s"] [data-key="s"] .keyboard__cap,
+[data-live-key="t"] [data-key="t"] .keyboard__cap,
+[data-live-key="u"] [data-key="u"] .keyboard__cap,
+[data-live-key="v"] [data-key="v"] .keyboard__cap,
+[data-live-key="w"] [data-key="w"] .keyboard__cap,
+[data-live-key="x"] [data-key="x"] .keyboard__cap,
+[data-live-key="y"] [data-key="y"] .keyboard__cap,
+[data-live-key="z"] [data-key="z"] .keyboard__cap,
+[data-live-key="0"] [data-key="0"] .keyboard__cap,
+[data-live-key="1"] [data-key="1"] .keyboard__cap,
+[data-live-key="2"] [data-key="2"] .keyboard__cap,
+[data-live-key="3"] [data-key="3"] .keyboard__cap,
+[data-live-key="4"] [data-key="4"] .keyboard__cap,
+[data-live-key="5"] [data-key="5"] .keyboard__cap,
+[data-live-key="6"] [data-key="6"] .keyboard__cap,
+[data-live-key="7"] [data-key="7"] .keyboard__cap,
+[data-live-key="8"] [data-key="8"] .keyboard__cap,
+[data-live-key="9"] [data-key="9"] .keyboard__cap,
+[data-live-key="-"] [data-key="-"] .keyboard__cap,
+[data-live-key="="] [data-key="="] .keyboard__cap,
+[data-live-key="["] [data-key="["] .keyboard__cap,
+[data-live-key="]"] [data-key="]"] .keyboard__cap,
+[data-live-key="\\\\"] [data-key="\\\\"] .keyboard__cap,
+[data-live-key=";"] [data-key=";"] .keyboard__cap,
+[data-live-key="'"] [data-key="'"] .keyboard__cap,
+[data-live-key=","] [data-key=","] .keyboard__cap,
+[data-live-key="."] [data-key="."] .keyboard__cap,
+[data-live-key="/"] [data-key="/"] .keyboard__cap,
+[data-live-key="`"] [data-key="`"] .keyboard__cap,
+[data-live-key="escape"] [data-key="escape"] .keyboard__cap,
+[data-live-key="tab"] [data-key="tab"] .keyboard__cap,
+[data-live-key="delete"] [data-key="delete"] .keyboard__cap,
+[data-live-key="capslock"] [data-key="capslock"] .keyboard__cap,
+[data-live-key="enter"] [data-key="enter"] .keyboard__cap,
+[data-live-key="shift"] [data-key="shift"] .keyboard__cap,
+[data-live-key="control"] [data-key="control"] .keyboard__cap,
+[data-live-key="alt"] [data-key="alt"] .keyboard__cap,
+[data-live-key="meta"] [data-key="meta"] .keyboard__cap,
+[data-live-key=" "] [data-key=" "] .keyboard__cap,
+[data-live-key="arrowup"] [data-key="arrowup"] .keyboard__cap,
+[data-live-key="arrowdown"] [data-key="arrowdown"] .keyboard__cap,
+[data-live-key="arrowleft"] [data-key="arrowleft"] .keyboard__cap,
+[data-live-key="arrowright"] [data-key="arrowright"] .keyboard__cap {
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--background));
+  color: var(--foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .keyboard__key {
+    transition: none;
+  }
+}

@@ -1,0 +1,63 @@
+/* The window chrome's controls — the same three buttons on the terminal and the folder.
+ *
+ *  Sized in `em` so they follow the title bar's type, which is itself in `cqw` because
+ *  the whole glass is projected into 3D at a fixed 1180x665. The close keeps the red
+ *  hover it had as a lone button; the two beside it stay neutral so only the destructive
+ *  one shouts. */
+
+.window-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.window-control {
+  display: grid;
+  place-items: center;
+  width: 1.5em;
+  height: 1.5em;
+  padding: 0;
+  border: 0;
+  border-radius: 0.3em;
+  background: color-mix(in srgb, var(--screen-fg) 10%, transparent);
+  color: color-mix(in srgb, var(--screen-fg) 70%, transparent);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.window-control svg {
+  width: 0.82em;
+  height: 0.82em;
+}
+
+.window-control:hover,
+.window-control[aria-pressed="true"] {
+  color: #fff;
+  background: color-mix(in srgb, var(--screen-fg) 24%, transparent);
+}
+
+.window-control:active {
+  background: color-mix(in srgb, var(--screen-fg) 34%, transparent);
+}
+
+/* Only the close turns red: on a bar of three identical squares, the colour is what
+ *  keeps "the one that ends this" from being a coin toss. */
+.window-control--close:hover {
+  background: var(--screen-danger);
+}
+
+.window-control:focus-visible {
+  outline: 0.08em solid color-mix(in srgb, var(--screen-blue-soft) 90%, transparent);
+  outline-offset: 0.1em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window-control {
+    transition: none;
+  }
+}

@@ -1,0 +1,332 @@
+@import "tailwindcss";
+
+/* The room the monitor stands in.
+ *
+ *  These are deliberately not the page surface. `--background` is the hero's paper,
+ *  and the desk is a different place: a room with a wall, a floor and light in it.
+ *  They share a hue family with the three tokens above so the dive reads as one
+ *  continuous surface, but they are tuned for depth rather than for legibility of
+ *  body text — the wall is always *deeper* than the monitor's hardware, which is the
+ *  whole reason a cream monitor on a cream wall is hard to see.
+ *
+ *  Every other colour in the room is mixed from these eight in `room.css`, so a theme
+ *  change repaints the entire desk without touching a component. */
+:root {
+  --background: #f4f1ea;
+  --foreground: #171a22;
+  --accent: #ab1111;
+
+  /* Warm stone, and deliberately *darker* than the monitor's `#e7e4dd` face: a pale
+     machine standing in a shaded room reads as a pale shape, and the occlusion behind
+     it does the rest. Measured, the face against this wall is 1.65:1 — low on its own,
+     which is also true of the photograph it is imitating.
+
+     *Mixed from this theme's own two tokens* rather than written as hex, which is the
+     point of the whole block: the room is the page's paper and ink at two depths, so a
+     theme that changes its paper changes the room with it and there is no third palette
+     left over to fall out of step. The percentages are the old hex values' luminances
+     re-expressed — `#b8b3a4` was 53% ink over paper, `#9c9686` 34%, `#8b8578` 26% — so
+     the measured contrast above is unchanged and only the hue now comes from the theme. */
+  --desk-wall: color-mix(in srgb, var(--foreground) 53%, var(--background));
+  --desk-floor: color-mix(in srgb, var(--foreground) 34%, var(--background));
+  --desk-shaft: color-mix(in srgb, var(--background) 34%, transparent);
+  --desk-glow: color-mix(in srgb, var(--accent) 34%, transparent);
+  --desk-glow-core: color-mix(in srgb, var(--background) 52%, transparent);
+  --desk-contact: color-mix(in srgb, var(--accent) 16%, transparent);
+  /* The colour a wall actually turns when the only light in the room switches on.
+   *
+   *  `--desk-glow` is the accent at full strength — a gel, and the right thing for a
+   *  bezel's own emission but the wrong thing for the wall *behind* the machine, which
+   *  is being lit rather than replaced. Painted at that strength it haloed the monitor
+   *  as a red cutout: the one thing that made the screen read as a decal stuck on the
+   *  wall rather than as a thing switched on in a room. Mixed into the wall's own
+   *  colour, it is that wall with the screen's tint on it, and the falloff lands on a
+   *  value the room already has.
+   *
+   *  Declared once, in the same place and for the same reason as `--desk-surface`: it
+   *  composes the per-theme primitives above, so it repaints with the theme. */
+  --desk-spill: color-mix(in srgb, var(--accent) 20%, var(--desk-wall));
+  --desk-spill-core: color-mix(in srgb, var(--accent) 8%, var(--desk-wall));
+  --desk-vignette: color-mix(in srgb, var(--foreground) 32%, transparent);
+  --desk-prop: color-mix(in srgb, var(--foreground) 26%, var(--background));
+
+  /* The desk itself, in the same two tokens as everything else in the room.
+   *
+   *  Three values rather than one because a desk is three materials: a laminate top, the
+   *  edge band that shows the board's thickness, and the frame under it. Painted at one
+   *  colour it reads as a slab of card; painted as three, with the top lighter than the
+   *  band and the band lighter than the frame, it reads as a piece of furniture.
+   *
+   *  Graphite rather than a wood tone, and deliberately close to the monitor's own body:
+   *  the hardware is the subject, so the desk is the surface it stands on rather than a
+   *  second thing competing with it. It is also the only value here that has to survive
+   *  being seen edge-on at the front of a perspective view, where a busy grain would
+   *  compress into moiré — which is most of why a desk this size is a flat tone. */
+
+  /* The room's two gradient layers as one value, so the wall cannot drift between the
+   * surfaces that paint it. `.station` paints the room the dive arrives at;
+   * `.monitor-backdrop` paints the same room *outside* the opening window during the
+   * transition. Two copies of this literal in two files is a seam waiting to happen —
+   * and because the backdrop has to register with the interior of that window, even a
+   * small difference would show as a hard line across the clip edge.
+   *
+   *  Declared once in `:root` rather than per theme, because it composes the per-theme
+   *  primitives above; a custom property is substituted at the point of use, so every
+   *  theme and the pre-hydration fallback get it without repeating a line. */
+  --desk-surface:
+    radial-gradient(132% 96% at 50% 32%, transparent 36%, var(--desk-vignette) 100%),
+    linear-gradient(
+      to bottom,
+      var(--desk-wall) 0%,
+      color-mix(in srgb, var(--desk-wall) 68%, var(--desk-floor)) 58%,
+      var(--desk-floor) 100%
+    );
+
+  /* The desk's own surface, as the flat half of the room reports it.
+   *
+   *  `--desk-surface` is a *wall* falling to a floor; this is the board, and they are
+   *  different materials. Measured off the rendered canvas rather than chosen: the lit
+   *  board reads a neutral grey where the wall beside it reads a deeper one, and the two
+   *  used to sit sixty levels apart — a step that put the rails' type in a darker pocket
+   *  than the machines were standing in.
+   *
+   *  Painted at full strength now rather than mixed toward the wall: a desk does not
+   *  fade out where the text starts, and the half-and-half that stood here instead read
+   *  as a transparency — the surface looked like it had been washed out, not built. What
+   *  separates board from room is the occlusion line where the back edge meets the wall
+   *  and the grading below it: a seam and a shadow, not a change of colour. So this
+   *  value runs on behind the rails and is still the one surface the machines stand on.
+   *
+   *  Off the render, not off `DESK.top` in `hardware.ts`, because the material is lit:
+   *  the same two tokens a light source is applied to do not survive the trip unchanged. */
+  --desk-plane: rgb(199 198 195);
+
+  /* The same surface, held as its own token because the band grades away from it in
+   *  both directions — occluded where the board meets the wall, lit at the front lip —
+   *  and this is the value both grades are mixed from. */
+  --desk-plane-fill: var(--desk-plane);
+
+  /* The band: the grain, then the surface.
+   *
+   *  The grain is a tiled monochrome speckle. A laminate photographed at this size is
+   *  never one flat tone, and one flat tone at this area reads as painted card; six
+   *  per cent of black is enough to survive as texture and not as a change of value.
+   *
+   *  The surface is held to the projection where the scene writes it: `--desk-front` is
+   *  the board's front lip, re-solved every time the desk is measured, and its fallback
+   *  covers the frames before the first solve and the pages with no desk at all.
+   *
+   *  Its top is a fixed line under the masthead rather than the board's own back edge —
+   *  the desk is the spread the masthead heads, so it begins where the masthead ends.
+   *  Three things happen on that line: the wall hands over to the board over twenty
+   *  pixels, the board arrives already darkened where it touches the wall (the
+   *  occlusion a real junction throws), and it lifts out of that darkness across the
+   *  first hundred-odd pixels into the graded surface — darkest at the back, brightest
+*  at the front lip where the light lands — then *holds* at that level, so the rails'
+ *  text and the keyboard stand on the desk rather than slipping past its front edge,
+ *  before giving way to the floor once more at the bottom of the frame. The seam and
+ *  the grading are what let a surface this large read as a desk instead of as a field. */
+  --desk-plane-band:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E"),
+    linear-gradient(
+      to bottom,
+      transparent 0 64px,
+      color-mix(in srgb, var(--desk-plane-fill) 84%, black) 84px,
+      color-mix(in srgb, var(--desk-plane-fill) 94%, black) 190px,
+      var(--desk-plane-fill) 46%,
+      color-mix(in srgb, var(--desk-plane-fill) 92%, white) var(--desk-front, 94%),
+      var(--desk-plane-fill) calc(var(--desk-front, 94%) + 4rem),
+      transparent calc(var(--desk-front, 94%) + 6rem)
+    );
+
+  /* What is painted on the glass.
+   *
+   *  A separate family from `--foreground` on purpose. The desktop is a Kali desktop
+   *  and Kali's XFCE is dark in both of this site's themes, so the text on the screen
+   *  must stay light even when the page's own text token goes dark — sharing one token
+   *  between a cream page and a near-black desktop is what put `#171a22` on `#05060a`
+   *  and made the terminal unreadable at 1.14:1 in the light theme.
+   *
+   *  The values still move with the theme, in the one direction that makes sense for a
+   *  dark desktop in a bright room: everything here is a step lighter in the light
+   *  theme, so the screen reads as a machine sitting in daylight rather than as a hole
+   *  cut out of the wall. */
+  --screen-bg: #0b0e14;
+  --screen-bg-panel: #1a1e28;
+  --screen-bg-panel-2: #131620;
+  --screen-bg-window: #141821;
+  --screen-bg-title: #1b202b;
+  --screen-fg: #dde2ec;
+
+  /* The accent, as it appears on the glass. `--accent` is #ab1111 here — a dark red
+     chosen to sit on cream paper, and at 2.6:1 against this desktop it was a maroon
+     smudge, which is how the figlet wordmark ended up unreadable in the light theme
+     while the same markup was perfectly legible in the dark one. An accent is a
+     relationship to its surface, not a colour: this one is lifted until it reads. */
+  --screen-accent: #e05252;
+
+  --screen-line: #2f3646;
+  --screen-blue: #6c8cff;
+  --screen-blue-soft: #9db8ff;
+  --screen-danger: #c33a3f;
+  --screen-shadow: rgb(0 0 0 / 48%);
+
+  /* Glass is lit by the room it is in, not by the page: a highlight on a screen in a
+     sunlit room is warm-white and a highlight at night is blue-white, and neither one
+     is `--background`. These replace a `mix-blend-mode: screen` over cream, which was
+     why the desktop went pale and low-contrast in the light theme and kept its scanlines
+     only in the dark one. */
+  --screen-glass-sheen: rgb(232 238 246 / 11%);
+  --screen-glass-scan: rgb(214 226 245 / 5%);
+}
+
+:root[data-theme="light"] {
+  --background: #f4f1ea;
+  --foreground: #171a22;
+  --accent: #ab1111;
+}
+
+:root[data-theme="dark"] {
+  --background: #0b0e14;
+  --foreground: #e6e8ee;
+  --accent: #ea2e2e;
+
+  /* The board at night, read off the canvas the same way the light theme's was. It is
+     the one token in this block that has to be *measured* rather than mixed: the desk is
+     a lit MeshStandard, so its rendered value is the material times whatever the key
+     light is doing, and `DESK.dark.top` is not it — that hex is `#282d35` and the board
+     comes back at `rgb(20 21 24)` once it has been lit at night, which is also where the
+     wall's `rgb(23 26 32)` sits: at night this room's desk and its wall are almost the
+     same value, unlike the light theme's fifty-five level step. So this is tuned on the
+     seam rather than on the surface, and it lands within three levels of the board on
+     both sides; a value even four higher read as a lit rectangle behind the type. */
+  --desk-plane: rgb(56 60 66);
+
+  /* A room at night, held to the page's own near-black paper instead of lifted.
+     These were 7% and 3% ink — a graphite wall that read as a cold slate-grey
+     backdrop behind the machines, which is what the room used to look like from a
+     window across the street: grey. Asked for hitam, so the wall and floor come down
+     to a hair of ink over `#0b0e14`: they are still a shade apart from the page and
+     from each other, just close enough for the wall to hand over to the floor the way
+     a darkroom does. The machinery's silhouette used to lean on the wall being
+     *lighter* than the monitor's `#20242b` face; with the wall this black it leans on
+    what a real dark monitor in a dark room leans on — the contact shadow and the key
+     light's rim — and the surface behind the type is dark the way the desk in a room
+     at 2am is dark. The table's own `--desk-plane` is untouched, and stays grey.
+
+     These six were `#384760` and `#202b3a` — a hardcoded blue-slate that had nothing
+     to do with either theme and read as a different website behind the glass: a cold
+     blue room with a red accent in it. Now they are the same ink-over-paper mixes as
+     the light theme's, at 2% and 1%, which is the same relationship the light theme
+     has and keeps the room a room of its own ink rather than a navy one. The shafts
+     and the glow core take the page's foreground too, so a screen at night lights a
+     room of the room's own colour instead of a doubled one. */
+  /* A room at night. The wall and floor lift off the page's own near-black paper in
+     the same ink-over-paper mixes as the light theme used to carry proportionally —
+     a graphite wall (7%) falling to a graphite floor (3%) — because a black wall and a
+     black floor paint one void and the desk loses its 90° seam: the wall hands over to
+     the floor at the horizon, and the desk's own surface reads off both. The shafts
+     come back as a trace of the window light; on a graphite wall a beam at a few
+     percent reads as a soft wash, not a smear. */
+  --desk-wall: color-mix(in srgb, var(--foreground) 7%, var(--background));
+  --desk-floor: color-mix(in srgb, var(--foreground) 3%, var(--background));
+  --desk-shaft: color-mix(in srgb, var(--foreground) 6%, transparent);
+  --desk-glow: color-mix(in srgb, var(--accent) 40%, transparent);
+  --desk-glow-core: color-mix(in srgb, var(--foreground) 26%, transparent);
+  --desk-contact: color-mix(in srgb, var(--accent) 22%, transparent);
+  --desk-vignette: rgb(0 0 0 / 52%);
+  --desk-prop: color-mix(in srgb, var(--foreground) 4%, var(--background));
+
+  /* The dark of a room at night. Everything is a step *below* the light theme's, which
+     is the honest difference between a screen seen in daylight and one seen at 2am —
+     the same desktop, not a second one. */
+  --screen-bg: #05060a;
+  --screen-bg-panel: #171a23;
+  --screen-bg-panel-2: #101218;
+  --screen-bg-window: #14171f;
+  --screen-bg-title: #1c202b;
+  --screen-fg: #d7dcea;
+  --screen-accent: #ea2e2e;
+  --screen-line: #4b5570;
+  --screen-blue: #6c8cff;
+  --screen-blue-soft: #8fb0ff;
+  --screen-danger: #c33a3f;
+  --screen-shadow: rgb(0 0 0 / 48%);
+  --screen-glass-sheen: rgb(214 226 248 / 9%);
+  --screen-glass-scan: rgb(206 222 245 / 6%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background: #0b0e14;
+    --foreground: #e6e8ee;
+    --accent: #ea2e2e;
+
+    /* Restated rather than inherited. The hero writes `data-theme` in an effect
+       (Hero.tsx), so until it does, this block is what decides the room — and a
+       dark desk that flashed to warm stone for one frame would be a visible pulse on
+       the first dive. The duplication mirrors the three tokens above it. */
+    --desk-wall: color-mix(in srgb, var(--foreground) 7%, var(--background));
+    --desk-floor: color-mix(in srgb, var(--foreground) 3%, var(--background));
+    --desk-shaft: color-mix(in srgb, var(--foreground) 6%, transparent);
+    --desk-glow: color-mix(in srgb, var(--accent) 40%, transparent);
+    --desk-glow-core: color-mix(in srgb, var(--foreground) 26%, transparent);
+    --desk-contact: color-mix(in srgb, var(--accent) 22%, transparent);
+    --desk-vignette: rgb(0 0 0 / 52%);
+    --desk-prop: color-mix(in srgb, var(--foreground) 4%, var(--background));
+    --screen-bg: #05060a;
+    --screen-bg-panel: #171a23;
+    --screen-bg-panel-2: #101218;
+    --screen-bg-window: #14171f;
+    --screen-bg-title: #1c202b;
+    --screen-fg: #d7dcea;
+    --screen-accent: #ea2e2e;
+    --screen-line: #4b5570;
+    --screen-blue: #6c8cff;
+    --screen-blue-soft: #8fb0ff;
+    --screen-danger: #c33a3f;
+    --screen-shadow: rgb(0 0 0 / 48%);
+    --screen-glass-sheen: rgb(214 226 248 / 9%);
+    --screen-glass-scan: rgb(206 222 245 / 6%);
+  }
+}
+
+/* The components that render inside the monitor (terminal, keyboard) are
+   written against Tailwind utilities rather than the hand-written CSS the rest
+   of the site uses. Exposing the theme as `@theme` is what turns `--background`
+   into `bg-background`; `inline` is the part that matters here, because it makes
+   the generated utility reference the variable instead of copying its value out,
+   so a utility written once still follows `[data-theme]` when the user flips the
+   theme. A plain `@theme` block would freeze the colour at build time and the
+   keyboard would keep its light-mode keycaps on a dark page. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-border: color-mix(in srgb, var(--foreground) 15%, transparent);
+  --color-border-strong: color-mix(in srgb, var(--foreground) 28%, transparent);
+  --color-surface: color-mix(in srgb, var(--foreground) 6%, transparent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Tailwind's `dark:` variant keys off `prefers-color-scheme` by default, but this
+   site does not use the system preference to decide its theme - it writes the
+   user's explicit choice onto `<html data-theme>`. Without this, the keyboard's
+   `dark:` classes would follow the OS and disagree with the page. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-poppins), var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}

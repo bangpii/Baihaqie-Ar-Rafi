@@ -1,0 +1,40 @@
+{
+  "name": "bangpi-profile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "lint:ox": "oxlint"
+  },
+  "dependencies": {
+    "cloudinary": "^2.11.0",
+    "clsx": "^2.1.1",
+    "gsap": "^3.15.0",
+    "lucide-react": "^1.49.0",
+    "motion": "^13.4.6",
+    "next": "16.3.6",
+    "next-cloudinary": "^6.19.3",
+    "ogl": "^1.0.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^3.7.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@oxlint/plugins": "1.86.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "^0.186.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "oxlint": "1.86.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

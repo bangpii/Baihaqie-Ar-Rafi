@@ -1,0 +1,29 @@
+/* PdfViewer — the document window's own two overrides.
+ *
+ *  Everything else is the terminal window's chrome, imported by class in the component.
+ *  Only the layer and the frame's surface are new. */
+
+/* Above both the folder it was launched from and the terminal behind it. The other two
+ *  windows sit at 2; the reader opened this one last and it should stay on top of what
+ *  it was opened from. */
+.pdf-viewer {
+  z-index: 3;
+}
+
+/* The browser draws a PDF on white in every theme, so the body is white too — a tinted
+ *  body would frame the readable page in a dark rectangle for the moment before the
+ *  first page paints. */
+.pdf-viewer__body {
+  background: #fff;
+}
+
+/* The frame is the reader: it fills the body and lets the browser scroll the document
+ *  inside it. `border: 0` because the default iframe inset is a hairline the window's
+ *  own border already draws. */
+.pdf-viewer__frame {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}

@@ -1,0 +1,240 @@
+/* TowerScene — the case standing on the left of the desk.
+ *
+ *  In its own lane beside the monitor, not on top of it.
+ *
+ *  `MonitorScene` fits the monitor to the *height* of whatever stage it is handed and
+ *  never grows past the width of one, which means at any window size there is some
+ *  spare width to either side — and a mid-tower is not narrow enough to sit in that
+ *  spare width. The two obvious answers are both wrong. Overlapping the monitor means
+ *  the case stands in front of the screen, which is not where a case stands on a desk.
+ *  Shrinking the monitor to fit a tower beside it makes the subject of the scene
+ *  smaller in order to photograph its furniture.
+ *
+ *  So the rig reserves a lane instead (`.station__rig`'s `padding-left`, and
+ *  `--tower-lane` in `station.css`), and the case is sized against that. The monitor
+ *  loses exactly the width the tower takes and not a pixel more — which is the honest
+ *  price of putting a second machine on the desk, paid by the thing that can afford
+ *  it.
+ *
+ *  `pointer-events: none` on the wrapper and `auto` on `.tower__hit` only. The canvas
+ *  is a picture of a case and a picture should not swallow the clicks aimed at the
+ *  desk beside it; the hit layer is the transparent sibling the browser actually
+ *  hit-tests, and therefore the only node that can carry a cursor. */
+
+/* The lane, and the only box on this desk whose aspect ratio is a fact about a piece of
+ *  geometry rather than a fact about the page.
+ *
+ *  0.7 is `TowerScene`'s silhouette: a case of width 11 and depth 20 turned 0.24 rad
+ *  projects 11×cos(0.24) + 20×sin(0.24) = 15.4 units across and 22 units tall. Give the
+ *  canvas that shape and the case fills it, which is what makes the fit inside
+ *  `TowerScene` a fit at all — a lane 126px wide and 490px tall would instead leave the
+ *  case 126×170 in the middle of an empty column, with the pointer two thirds of a case
+ *  away from anything it could press.
+ *
+ *  The duplication is deliberate and its failure mode is soft: if `FACING` changes and
+ *  this does not, the case is drawn a little smaller inside the box and nothing is
+ *  cropped and no click misses. Reading the number out of the scene instead would need
+ *  a measured height plumbed back into the cascade to save one constant.
+ *
+ *  `bottom: 0` and no `top`: the case stands on the desk, so the box is anchored to
+ *  the desk line and takes the height its shape needs, which also leaves the empty
+ *  upper part of the lane as the wall above it. */
+/* The lane: the case's share of the desk, and the full height of the stage.
+ *
+ *  It used to carry an `aspect-ratio` of its own — 0.7, the case's own silhouette — so
+ *  the box was a short column standing on the desk line with bare wall above it. That
+ *  put the case's feet 21px *below* the monitor's base and its top edge 300px below the
+ *  monitor's: a case on the front edge of the desk beside a machine at the back of it.
+ *  Filling the stage's height instead gives the two one shared box, and since
+ *  `TowerScene` centres whatever it draws, sharing the box is what lands the case's
+ *  bottom edge on the same desk line as the monitor's stand.
+ *
+ *  Height is therefore the stage's and width is `--tower-lane`, and which axis the fit
+ *  gives way to is left to the scene: it frames by whichever runs out first, so this tall
+ *  narrow box draws the case as wide as the lane allows and as tall as that width makes
+ *  it — never cropped, never floating. */
+.tower {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--tower-lane);
+
+  /* Out of the lane's empty right-hand side and towards the monitor. A translate rather
+   * than a `left`, so the lane keeps its width: the stage reserves exactly this much as
+   * padding and the keyboard centres itself against the same number, and either of those
+   * reading a shifted lane would move the monitor instead of the case. Percentage-based,
+   * like everything else here, so the gap closes by the same proportion at every width. */
+  transform: translateX(calc(var(--tower-nudge) * 0.62));
+
+  pointer-events: none;
+}
+
+.tower__canvas,
+.tower__hit {
+  position: absolute;
+  inset: 0;
+}
+
+.tower__canvas {
+  pointer-events: none;
+}
+
+.tower__canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tower__hit {
+  pointer-events: auto;
+  cursor: default;
+
+  /* `manipulation` rather than `auto`: this box covers desk the user may have been
+   * about to swipe, and the only gesture it actually wants is the tap. */
+  touch-action: manipulation;
+}
+
+/* Nothing here earns a WebGL context on a screen too narrow for the rails — and the
+ * rails are where the same three controls live as real buttons, so the machine does
+ * not lose its switches, only its case. `display: none` rather than a narrower box,
+ * because a display-none element is not measured, so the scene does not build at all
+ * instead of building a case nobody can see. */
+@media (max-width: 900px) {
+  .tower {
+    display: none;
+  }
+}
+
+/* --- The legend ------------------------------------------------------------------
+ *
+ *  The case's three controls, as real focusable buttons in the left rail.
+ *
+ *  This is not a duplicate of the raycast targets, it is the reason they are usable:
+ *  a WebGL mesh is invisible to a screen reader and unreachable by Tab, so a desk
+ *  whose only power switch were the ring on the case would be a desk with a keyboard
+ *  built into it that cannot switch anything. Hovering or focusing a row here lights
+ *  the same control on the case — one event, seen twice — which is why the buttons
+ *  read as captions for the object rather than as a settings panel. */
+
+.tower-legend {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.1rem 0 0;
+}
+
+/* The label is the only part of the row in the reader's language: `PWR` is what the
+ * case says, and a row that stopped at three letters would be a code list rather than
+ * a set of controls. */
+.tower-legend__label {
+  min-width: 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--foreground) 86%, transparent);
+  overflow-wrap: break-word;
+}
+
+.tower-legend__row {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+
+  /* The whole row is the button, rather than the label being a button inside a
+   * clickable row. Nested targets are two tab stops for one action, and the gap
+   * between them is a dead zone on a rail this narrow. */
+  width: 100%;
+  padding: 0.34rem 0.4rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.tower-legend__row:hover,
+.tower-legend__row:focus-visible,
+/* Lit from the other end: pointing at the ring on the case, or at nothing at all in
+ * this rail. Hovered and focused share the rule deliberately — the case's raycast can
+ * report a hover but never a focus, so if focus did not look like hover then keyboard
+ * users would be looking at a control that lit nothing while they tabbed onto it. */
+.tower-legend__row[data-lit="true"] {
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
+}
+
+.tower-legend__row:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* The three letters, set as a key cap rather than a label: `PWR` on the case is
+ * printed on a button, and the legend is saying what that button says. */
+.tower-legend__cap {
+  justify-self: start;
+  padding: 0.1rem 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 26%, transparent);
+  border-radius: 0.22rem;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+  transition:
+    border-color 200ms ease,
+    color 200ms ease,
+    background-color 200ms ease;
+}
+
+.tower-legend__row:hover .tower-legend__cap,
+.tower-legend__row:focus-visible .tower-legend__cap,
+.tower-legend__row[data-lit="true"] .tower-legend__cap {
+  border-color: color-mix(in srgb, var(--color-accent) 62%, transparent);
+  color: color-mix(in srgb, var(--color-accent) 72%, var(--foreground));
+}
+
+/* The state. Dim when the machine is asleep and the same accent as the rest of the
+ * accent-tinted state on this desk — see `.station--on .key-legend__cap`, whose 40%
+ * accent mix is the measured floor for tinting on a surface this deep. */
+.tower-legend__state {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 62%, transparent);
+  transition: color 240ms ease;
+}
+
+.tower-legend__row[data-state="on"] .tower-legend__state {
+  color: color-mix(in srgb, var(--color-accent) 40%, var(--foreground));
+}
+
+.tower-legend__note {
+  margin: 0.85rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+  text-wrap: pretty;
+}
+
+/* The block is unstyled on purpose: no box, no rule. The rail already separates its
+ * sections with a titled rule above each one, and a second border here would draw a
+ * line across the column twice for no gain. Only the space it needs to stand apart
+ * from the specification above it, which is a flex gap on the rail's own children —
+ * so this is a plain block and the rail's gap does not reach inside it. */
+.tower-legend-block {
+  margin-top: 1.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tower-legend__row,
+  .tower-legend__cap,
+  .tower-legend__state {
+    transition: none;
+  }
+}

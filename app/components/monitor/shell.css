@@ -1,0 +1,269 @@
+/* Shell — rendered directly on the monitor's glass.
+ *
+ *  Every dimension is relative, because this element is projected into 3D rather
+ *  than laid out in the page: nothing about its type size follows from the
+ *  viewport on its own. The screen element it lives in is authored at a fixed
+ *  1180x665 and declared a size container, so `cqw` resolves against *that* — the
+ *  shell keeps its proportions at any projected size with no measurement
+ *  JavaScript and no reflow.
+ *
+ *  No card chrome. There is no window floating on the glass: the bezel is
+ *  geometry and the reflection is an overlay, so a border and a rounded corner
+ *  here would draw a second, fake edge inside the real one. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: color-mix(in srgb, var(--screen-fg) 88%, transparent);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-ligatures: none;
+}
+
+/* The empty strip, so the session has a top edge to sit under. */
+.shell__bar {
+  flex: 0 0 auto;
+  height: 1.4em;
+  border-bottom: 1px solid color-mix(in srgb, var(--screen-fg) 14%, transparent);
+}
+
+.shell__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* Contain is load-bearing, not polish. The page itself cannot scroll, but without
+     this the wheel chains out of the shell to the document, the hero's dive handler
+     grabs it, and the whole scene zooms out from under the reader. */
+  overscroll-behavior: contain;
+
+  /* Scrolling is kept, the bar is not: a real terminal draws no scrollbar of its own, and
+     a bright rule down the edge of a projected screen reads as a seam in the glass. The
+     wheel, the keys and a drag all still scroll the session; only the thumb is gone. */
+  scrollbar-width: none;
+}
+
+.shell__body::-webkit-scrollbar {
+  display: none;
+}
+
+.shell__pre {
+  margin: 0;
+  padding: 0.9em 1.15em 1.4em;
+  font-size: 1.6cqw;
+  line-height: 1.62;
+  font-weight: 400;
+  white-space: pre;
+  tab-size: 2;
+}
+
+/* --- The banner -------------------------------------------------------------- */
+
+/* Tight leading, because the glyphs are already full-height: at the body line-height
+   the figlet would sit in a column of empty space taller than the letters. */
+.shell__banner {
+  display: block;
+  line-height: 1.04;
+  color: color-mix(in srgb, var(--screen-accent) 88%, var(--screen-fg));
+  text-shadow: 0 0 0.6em color-mix(in srgb, var(--screen-accent) 34%, transparent);
+}
+
+/* --- Rows -------------------------------------------------------------------- */
+
+.shell__line,
+.shell__command {
+  display: block;
+}
+
+.shell__command {
+  color: color-mix(in srgb, var(--screen-fg) 96%, transparent);
+  font-weight: 500;
+}
+
+.shell__title {
+  color: color-mix(in srgb, var(--screen-accent) 76%, var(--screen-fg));
+}
+
+.shell__gutter {
+  /* Not the accent at 60% on its own any more: on the dark desktop that landed at
+     2.5:1 in the light theme, and this row carries the `❯❯❯` that tells the reader the
+     terminal is live. Mixed towards the screen's ink, so it is a coloured prompt rather
+     than a dark one. */
+  color: color-mix(in srgb, var(--screen-accent) 58%, var(--screen-fg));
+}
+
+.shell__line--output {
+  color: color-mix(in srgb, var(--screen-fg) 78%, transparent);
+}
+
+.shell__line--muted {
+  /* Real terminal output, so it is held to the text threshold rather than to whatever
+     looked quiet: 44% measured 3.63:1 on the light desktop and 3.43:1 on the dark one. */
+  color: color-mix(in srgb, var(--screen-fg) 62%, transparent);
+}
+
+.shell__line--error {
+  color: color-mix(in srgb, #ff6b6b 78%, var(--screen-fg));
+}
+
+.shell__gap {
+  display: block;
+  min-height: 0.7em;
+}
+
+/* --- The caret --------------------------------------------------------------- */
+
+/* A block rather than a bar: on a glass that already has scanlines over it, a thin
+   bar disappears into them, and this is the one thing on the screen that must read as
+   "you can type here". */
+.shell__caret {
+  display: inline-block;
+  width: 0.62em;
+  height: 1.05em;
+  margin-left: 0.06em;
+  vertical-align: text-bottom;
+  background: color-mix(in srgb, var(--screen-accent) 88%, var(--screen-fg));
+  animation: shell-caret 1.06s steps(1) infinite;
+}
+
+.shell__caret--idle {
+  animation: none;
+  opacity: 0.4;
+}
+
+@keyframes shell-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* --- Neofetch ---------------------------------------------------------------- */
+
+/* Two columns, because padding the logo out with spaces to line it up against the
+   facts would break the moment either side wrapped. */
+.shell__fetch {
+  display: flex;
+  gap: 1.6em;
+  align-items: flex-start;
+}
+
+.shell__logo {
+  margin: 0;
+  line-height: 1.06;
+  color: color-mix(in srgb, var(--screen-accent) 84%, var(--screen-fg));
+}
+
+.shell__facts {
+  display: grid;
+  gap: 0.1em;
+  margin: 0;
+}
+
+.shell__fact {
+  display: flex;
+  gap: 0.7em;
+}
+
+.shell__fact dt {
+  min-width: 7ch;
+  color: color-mix(in srgb, var(--screen-accent) 76%, var(--screen-fg));
+}
+
+.shell__fact dd {
+  margin: 0;
+  color: color-mix(in srgb, var(--screen-fg) 82%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__caret {
+    animation: none;
+  }
+}
+
+/* --- The terminal window ----------------------------------------------------- */
+
+/* The shell, wrapped in the same window chrome as the file manager: a title bar, a
+ * shadow and the same three controls. Sized in `cqw` for the reason the shell is — the
+ * whole glass is projected into 3D at a fixed 1180x665 — and layered at `z-index: 2` so
+ * it sits over the wallpaper with the panel still across the top.
+ *
+ * The inset is measured from `.screen__content`, which begins *under* the panel, so the
+ * window never reaches up into the bar — and Maximize, which takes that box to its
+ * edges, fills the desktop without covering the panel, the way a real window manager
+ * leaves the panel alone. */
+.term-window {
+  position: absolute;
+  z-index: 2;
+  inset: 1.5cqw 6.5cqw 5.5cqw;
+
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid color-mix(in srgb, var(--screen-line) 46%, transparent);
+  border-radius: 0.7cqw;
+  background: color-mix(in srgb, var(--screen-bg-window) 97%, var(--screen-bg));
+  box-shadow: 0 1.6cqw 3.2cqw var(--screen-shadow);
+
+  font-size: 1.5cqw;
+  color: color-mix(in srgb, var(--screen-fg) 88%, transparent);
+}
+
+/* Fills the desktop under the panel: flush to the content box, no radius and no shadow,
+ * because a maximized window has no edges for either to describe. */
+.term-window--maximized {
+  inset: 0;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Minimized: still mounted, so the session and the window's size survive, but off the
+ * glass. `display: none` rather than a transform, so it takes no space and no clicks. */
+.term-window--minimized {
+  display: none;
+}
+
+.term-window__bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.55em 0.7em;
+  border-bottom: 1px solid color-mix(in srgb, var(--screen-line) 34%, transparent);
+  background: color-mix(in srgb, var(--screen-bg-title) 96%, var(--screen-bg));
+  border-radius: 0.68cqw 0.68cqw 0 0;
+}
+
+.term-window--maximized .term-window__bar {
+  border-radius: 0;
+}
+
+.term-window__title {
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.term-window__body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The window's title bar is the shell's top edge now, so the shell's own empty strip is
+   redundant — the same rule `.screen--desktop` would otherwise apply. */
+.term-window__body .shell {
+  flex: 1 1 auto;
+}

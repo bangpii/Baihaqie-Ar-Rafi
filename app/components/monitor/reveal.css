@@ -1,0 +1,133 @@
+/* MonitorReveal — the ScrollExpand transition, driven by the hero's zoom.
+ *
+ *  `--monitor-reveal` is 0..1 and is written by the hero's animation loop on the
+ *  document root as the dive passes `ZOOM.sinkTo..ZOOM.max`. Every property here
+ *  is a calc() off that number, so the reveal tracks the zoom exactly instead of
+ *  playing a fixed duration the user can outrun. There is deliberately no
+ *  `transition`: adding one would make the expansion lag behind the zoom that is
+ *  supposed to be causing it.
+ *
+ *  The clip is the original's device — a rounded window opening out to the full
+ *  frame — with the travel shortened, because the dive driving it arrives at full
+ *  speed and a slow reveal would read as the scene hesitating.
+ *
+ *  Note there is deliberately NO local `--monitor-reveal: 0` declaration here. A
+ *  custom property declared on an element beats the inherited value, so declaring
+ *  the default here would shadow the root's and pin the reveal shut. The fallback
+ *  belongs in the var() instead, where it only applies when nothing is inherited.
+ *
+ *  `--monitor-scale` and `--monitor-drop` are the two numbers the reveal is built
+ *  from, derived here so that the window and the backdrop cannot disagree about
+ *  where the room is — the backdrop registers its gradient against them, and a scale
+ *  that differed by a percent would put a visible step across the clip edge. */
+
+.monitor-backdrop,
+.monitor-reveal {
+  --monitor-scale: calc(0.68 + 0.32 * var(--monitor-reveal, 0));
+  --monitor-drop: calc((1 - var(--monitor-reveal, 0)) * 8vh);
+}
+
+/* The room, arriving before the desk.
+ *
+ *  Between 1x and 110x the dive only shows the hero's paper, magnified until it is a
+ *  single flat field of ink on cream — which the dive then travelled into on purpose,
+ *  and which is the one surface that most needed not to stay flat. The desk window
+ *  opens on top of that field, so without this the monitor appears as a slab on an
+ *  empty colour. With it, the room is already there and the window reads as a window
+ *  into the room the monitor stands in.
+ *
+ *  Registered rather than scaled, and that is the whole trick. Scaling this element
+ *  the way the window scales itself would shrink it below the frame at low progress
+ *  and let the hero show through the margin; not scaling it at all would leave the
+ *  interior wall at 0.84x while this one stayed at 1x, and the wall-to-floor
+ *  transition would step across the clip edge by a visible fraction of the viewport
+ *  height. Scaling the *background* by the same factor instead, centred, draws the
+ *  gradient at exactly the size the window's interior is drawing it at every value,
+ *  and the margins that gradient no longer covers fall back to `--desk-floor` — which
+ *  is what the element inside the window falls back to at the same screen position.
+ *  Identical image, identical scale, no seam, and still full-bleed throughout.
+ *
+ *  The blur is a focus pull, not a filter for its own sake: it starts at 5px and lands
+ *  on 0 as the reveal completes, which is also the order in which the registration
+ *  above stops being sub-pixel and starts being examined. Imprecision and softness are
+ *  scheduled to peak together and vanish together.
+ *
+ *  Not interactive and not in the tree — it is scenery, and the hero underneath must
+ *  keep receiving clicks for the whole approach. */
+.monitor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+
+  background-color: var(--desk-floor);
+  background-image: var(--desk-surface);
+  background-repeat: no-repeat;
+
+  /* The drop is applied to the *gradient position*, never to the element. Both the
+   * gradient's scale and the window's drop have to be honoured at once, and moving the
+   * box is the one way to get only half of that: this is measured at reveal 0.15, the
+   * element's own box is translated down 61px, its bottom edge goes past the viewport,
+   * and the strip it used to cover is now bare — the flat hero, uncovered, in the one
+   * frame where the room was supposed to be arriving. An element that never moves
+   * cannot expose an edge, and background-position can express the same 8vh in the one
+   * place the geometry allows.
+   *
+   *  `center` is a percentage of the leftover space once the image is placed, so the
+   *  drop is added on top of it rather than replacing it. */
+  background-position: center calc(50% + var(--monitor-drop));
+  background-size: calc(100% * var(--monitor-scale)) calc(100% * var(--monitor-scale));
+
+  filter: blur(calc((1 - var(--monitor-reveal, 0)) * 5px));
+
+  /* Ramped to finish before the window reaches full opacity rather than tracking it.
+   * The hero's own magnified text is deliberately left alone, so the paper it is
+   * printed on has to be gone before the window turns opaque — otherwise the giant
+   * corner labels read straight through a half-transparent window and the crossing
+   * turns muddy instead of clean. */
+  opacity: clamp(0, calc((var(--monitor-reveal, 0) - 0.06) / 0.44), 1);
+
+  pointer-events: none;
+}
+
+.monitor-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+
+  clip-path: inset(
+    calc((1 - var(--monitor-reveal, 0)) * 26%) calc((1 - var(--monitor-reveal, 0)) * 18%)
+      round calc((1 - var(--monitor-reveal, 0)) * 26px)
+  );
+  transform: scale(var(--monitor-scale)) translateY(var(--monitor-drop));
+
+  /* Full opacity by the time the window is a third open. Fading up rather than
+     popping in matters here because the reveal begins at half the frame: at full
+     opacity the desk would appear as a large slab before it had begun to move,
+     which reads as a flash rather than as an opening. */
+  opacity: min(1, calc(var(--monitor-reveal, 0) * 2.6));
+
+  /* The clip animates on a compositor-cheap path, but a first-frame clip-path on
+     a full-viewport element can still cost a paint. */
+  will-change: clip-path, transform, opacity;
+}
+
+.monitor-reveal--active {
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monitor-reveal {
+    transform: none;
+    will-change: opacity;
+  }
+
+  /* The focus pull goes; the room still arrives. A fade is not motion, and dropping
+     the backdrop to nothing would leave the window opening on the flat paper again,
+     which is the thing this layer exists to prevent. */
+  .monitor-backdrop {
+    /* Position only, so there is no transform to remove — the reduced-motion block
+       exists to strip *motion*, and the gradient alignment is not motion. */
+    filter: none;
+  }
+}

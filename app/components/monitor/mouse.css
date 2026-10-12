@@ -1,0 +1,203 @@
+/* The gaming mouse — a hand-drawn peripheral beside the keyboard.
+ *
+ *  It lives inside `.station__keyboard-fit`, the box the slab is *drawn* at, so it can
+ *  be anchored to the slab's own left edge and sized as a share of the slab's drawn
+ *  width. That is what keeps it beside the keyboard rather than at a fixed screen
+ *  offset: the station fits the keyboard to the desk, and this follows the fit.
+ *
+ *  It is not a control and says so twice — `pointer-events: none` so it cannot eat a
+ *  click meant for the case's ring behind it, and `aria-hidden` on the component. */
+
+.station__keyboard-mouse {
+  position: absolute;
+  /* To the left of the slab, resting on the same desk line as the keyboard, with the
+   *  mat it sits on clearing the board by a comfortable gap. The gap is a little wider
+   *  than the mat's own overhang so the two read as separate objects on the desk rather
+   *  than one unit; the space it opens is empty desk, ahead of the case rather than on
+   *  top of it. */
+  right: calc(100% + 5.25rem);
+  bottom: 0.35rem;
+  z-index: 1;
+
+  /* Sized as a share of the slab it sits beside, so it scales with the keyboard the
+   *  station fits rather than with the viewport. The ratio is the SVG's own. */
+  width: 20%;
+  aspect-ratio: 140 / 220;
+
+  pointer-events: none;
+}
+
+.mouse {
+  /* The accent, lifted until it reads as emission rather than as a smudge of the
+   *  page's dark red. Both themes want the same vivid light; the mix only keeps a
+   *  trace of whichever red the theme is on. */
+  --mouse-rgb: color-mix(in srgb, var(--accent) 58%, #ff5f5f);
+
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* The mat the mouse sits on.
+ *
+ *  Larger than the mouse on every side and drawn under it, so the shell reads as an
+ *  object *standing on* something rather than as a shape floating over the desk. It
+ *  also catches the underglow, which is what turns the red light from a decal on the
+ *  shell into a pool on a surface.
+ *
+ *  A dark cloth in both themes, like the mouse itself: a gaming mat is a bought object
+ *  with its own colour, not a surface that repaints with the page. What keeps it legible
+ *  on the near-black desk is the rim and the red stitch, not a change of fill. */
+.mouse__pad {
+  position: absolute;
+  left: -38%;
+  right: -38%;
+  top: -8%;
+  bottom: -16%;
+  z-index: 0;
+  border-radius: 12%;
+  background:
+    radial-gradient(120% 80% at 50% 14%, rgb(255 255 255 / 6%), transparent 62%),
+    linear-gradient(to bottom, #1a1d23, #0b0d11 88%);
+  box-shadow:
+    0 6px 14px rgb(0 0 0 / 40%),
+    0 1px 2px rgb(0 0 0 / 40%),
+    inset 0 0 0 1px rgb(255 255 255 / 6%);
+}
+
+/* The stitched edge — the one detail that says "mat" instead of "rectangle". A dashed
+ *  hairline in the accent, kept faint so it reads as thread rather than as a border. */
+.mouse__pad::after {
+  content: "";
+  position: absolute;
+  inset: 5%;
+  border-radius: 9%;
+  border: 1px dashed color-mix(in srgb, var(--mouse-rgb) 42%, transparent);
+  opacity: 0.55;
+}
+
+.mouse__svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  /* The mouse's own contact shadow — the same plain-black lift the keycaps use, so it
+   *  stands on the desk in both themes instead of floating over one of them. */
+  filter: drop-shadow(0 5px 7px rgb(0 0 0 / 45%)) drop-shadow(0 1px 2px rgb(0 0 0 / 42%));
+}
+
+.mouse__body {
+  stroke: rgb(255 255 255 / 7%);
+  stroke-width: 1;
+}
+
+/* The two seams that turn one shell into a button plate: a hairline down the middle
+ *  and a shallow break across it. Drawn in black rather than in a token, because a seam
+ *  is a shadow in both themes. */
+.mouse__seam {
+  stroke: rgb(0 0 0 / 48%);
+  stroke-width: 1.6;
+}
+
+.mouse__strip {
+  stroke-width: 2.2;
+}
+
+.mouse__emblem {
+  stroke-width: 2;
+}
+
+.mouse__emblem-core {
+  stroke: none;
+}
+
+.mouse__rgb {
+  stroke: var(--mouse-rgb);
+  animation: mouse-pulse 3.4s ease-in-out infinite;
+}
+
+/* Grooves under the palm. Plain black, for the same reason as the seams. */
+.mouse__grip path {
+  stroke: rgb(0 0 0 / 30%);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+/* The pool the light throws onto the desk. A blurred red ellipse under the shell,
+ *  separate from the SVG so it can spill past the body without a filter region.
+ *
+ *  It is the mouse *waking*: dark by default, lit only while the cursor is moving
+ *  (`is-awake`, toggled from JS). It spills wider than the shell on every side so the
+ *  red is unmistakable around the silhouette, and it burns in with `screen` so the mat
+ *  reads as *lit* rather than merely tinted. */
+.mouse__underglow {
+  position: absolute;
+  left: -14%;
+  right: -14%;
+  bottom: -14%;
+  height: 62%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--mouse-rgb) 96%, #ff2f2f),
+    color-mix(in srgb, var(--mouse-rgb) 72%, transparent) 40%,
+    color-mix(in srgb, var(--mouse-rgb) 30%, transparent) 64%,
+    transparent 82%
+  );
+  filter: blur(6px) saturate(1.5);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: scale(0.55);
+  transition:
+    opacity 220ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    transform 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.mouse.is-awake .mouse__underglow {
+  opacity: 1;
+  transform: scale(1);
+  animation: mouse-pulse 1.5s ease-in-out infinite;
+}
+
+/* The shell itself catches the light: a hard red rim around the whole silhouette while
+ *  awake, on top of the black contact shadow that is always there. This is what makes
+ *  the mouse look switched on rather than just casting a red patch underneath. */
+.mouse.is-awake .mouse__svg {
+  filter:
+    drop-shadow(0 5px 7px rgb(0 0 0 / 45%))
+    drop-shadow(0 1px 2px rgb(0 0 0 / 42%))
+    drop-shadow(0 0 5px color-mix(in srgb, var(--mouse-rgb) 85%, transparent));
+}
+
+/* The strips, wheel and emblem flare up with the rim, so the whole object brightens
+ *  together instead of only the floor under it. */
+.mouse.is-awake .mouse__rgb {
+  filter: brightness(1.6) saturate(1.3);
+}
+
+@keyframes mouse-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* The RGB is decoration, not information: with motion turned down the strips hold a
+ *  steady glow, and the waking pool still fades in but stops breathing. */
+@media (prefers-reduced-motion: reduce) {
+  .mouse__rgb {
+    animation: none;
+    opacity: 0.92;
+  }
+
+  .mouse.is-awake .mouse__underglow {
+    animation: none;
+  }
+}

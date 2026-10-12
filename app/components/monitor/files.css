@@ -1,0 +1,388 @@
+/* FileManager — the folder window, on the glass.
+ *
+ *  Every dimension is in `cqw` or `em`, for the reason the shell is: this element is
+ *  projected into 3D at a fixed 1180x665 and then scaled, so a `rem` here would keep
+ *  its size on the authored element while the type around it shrank, and the window
+ *  would drift out of proportion to the panel it is sitting under. */
+
+/* A window, not a page. A shadow, a hairline and a title bar — the shape a reader
+ *  already has for "this is a thing with a close button", which is exactly what it is.
+ *  It sits inside the shell's area rather than replacing it, so the panel stays above
+ *  it and the terminal is still there when the window closes.
+ *
+ *  The inset is measured from `.screen__content`, which begins under the panel, so the
+ *  window never reaches the bar and Maximize can fill that box without covering it. */
+.files {
+  position: absolute;
+  z-index: 2;
+  inset: 8cqw 16cqw 12cqw;
+
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid color-mix(in srgb, var(--screen-line) 46%, transparent);
+  border-radius: 0.7cqw;
+  background: color-mix(in srgb, var(--screen-bg-window) 96%, var(--screen-bg));
+  box-shadow: 0 1.6cqw 3.2cqw var(--screen-shadow);
+
+  font-size: 1.5cqw;
+  color: color-mix(in srgb, var(--screen-fg) 88%, transparent);
+
+  /* Clip the window's contents to the window: the grid and the detail panel scroll
+     inside it, and without this a flex child that refuses to shrink would paint its
+     overflow straight over the desktop instead of handing it to its own scrollbar. */
+  overflow: hidden;
+
+  /* The focus ring is the window's own, not the browser's default one on a
+     `tabIndex={-1}` box: the ring tells the reader the window has the keyboard, and
+     an outline hugging the whole thing at this size is a hard bright edge. */
+  outline: 0.1cqw solid color-mix(in srgb, var(--screen-blue) 62%, transparent);
+  outline-offset: 0.1cqw;
+}
+
+/* Flush to the desktop under the panel: no radius, no shadow, no edge. */
+.files--maximized {
+  inset: 0;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
+/* Hidden but mounted, so the folder the reader was in is still the folder when the panel
+ *  brings it back. */
+.files--minimized {
+  display: none;
+}
+
+.files__bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.55em 0.7em;
+  border-bottom: 1px solid color-mix(in srgb, var(--screen-line) 34%, transparent);
+  background: color-mix(in srgb, var(--screen-bg-title) 96%, var(--screen-bg));
+  border-radius: 0.68cqw 0.68cqw 0 0;
+}
+
+.files__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-width: 0;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.files__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  padding: 0.2em 0.5em;
+  border: 0;
+  border-radius: 0.25em;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.files__back:hover {
+  color: #fff;
+  background: color-mix(in srgb, var(--screen-accent) 26%, transparent);
+}
+
+.files__back:focus-visible {
+  outline: 0.08em solid color-mix(in srgb, var(--screen-blue-soft) 90%, transparent);
+  outline-offset: 0.1em;
+}
+
+.files__sep {
+  color: color-mix(in srgb, var(--screen-fg) 32%, transparent);
+}
+
+.files__here {
+  color: color-mix(in srgb, var(--screen-accent) 74%, var(--screen-fg));
+  font-weight: 600;
+}
+
+.files__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  flex: 1 1 auto;
+  /* The flexbox default (`auto`) keeps a scroll column taller than its window and the
+     wheel moves nothing — this is the one line that makes the folder scroll at all. */
+  min-height: 0;
+  margin: 0;
+  padding: 0.8em;
+  list-style: none;
+  overflow-y: auto;
+
+  /* Contain so a wheel over the list never chains out to the hero's dive, and hide the
+     bar the way the terminal does — the list still scrolls, it just does not draw a rule
+     down the edge of the glass. */
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.files__list::-webkit-scrollbar {
+  display: none;
+}
+
+.files__entry {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  width: 100%;
+  padding: 0.55em 0.6em;
+  border: 1px solid transparent;
+  border-radius: 0.35em;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.files__entry:hover {
+  border-color: color-mix(in srgb, var(--screen-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--screen-accent) 14%, transparent);
+}
+
+.files__entry:focus-visible {
+  outline: 0.08em solid color-mix(in srgb, var(--screen-blue-soft) 90%, transparent);
+  outline-offset: 0.1em;
+}
+
+/* The file inside a folder is not a control, so it gets none of the affordances
+ * above — the `--static` modifier is what keeps the row from claiming otherwise. */
+.files__entry--static {
+  cursor: default;
+}
+
+.files__entry--static:hover {
+  border-color: transparent;
+  background: transparent;
+}
+
+.files__icon {
+  flex: 0 0 auto;
+  width: 2.1em;
+  height: 1.6em;
+  color: color-mix(in srgb, var(--screen-accent) 80%, var(--screen-fg));
+}
+
+.files__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.files__name {
+  font-weight: 600;
+}
+
+.files__detail {
+  /* 62% rather than 48%: this is a real size-and-date under each filename, not a
+     caption, and it measured 4.07:1 in the light theme and 3.93:1 in the dark one. */
+  color: color-mix(in srgb, var(--screen-fg) 62%, transparent);
+}
+
+/* The bin, empty. Centred rather than a row, because it is a state and not an entry: a
+ *  single grey row would read as a file that failed to load. */
+.files__empty {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  padding: 1.5em;
+  text-align: center;
+}
+
+.files__empty-icon {
+  width: 4em;
+  height: 4em;
+  color: color-mix(in srgb, var(--screen-fg) 34%, transparent);
+}
+
+.files__empty-title {
+  margin: 0.3em 0 0;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--screen-fg) 82%, transparent);
+}
+
+.files__empty-note {
+  margin: 0;
+  color: color-mix(in srgb, var(--screen-fg) 54%, transparent);
+}
+
+/* The Project folder's grid. A grid rather than the list, because a folder of websites
+ * must show a face per entry or it is a folder of anonymous names. Four to a row keeps
+ * a card small enough that a row of them fits on the glass and the work scrolls as a
+ * grid, not as a column of giants. */
+.files__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.55em;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0.8em;
+  list-style: none;
+  align-content: start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.files__grid::-webkit-scrollbar {
+  display: none;
+}
+
+.files__card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.4em;
+  padding: 0.35em;
+  border: 1px solid transparent;
+  border-radius: 0.4em;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.files__card:hover {
+  border-color: color-mix(in srgb, var(--screen-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--screen-accent) 12%, transparent);
+}
+
+.files__card:focus-visible {
+  outline: 0.08em solid color-mix(in srgb, var(--screen-blue-soft) 90%, transparent);
+  outline-offset: 0.1em;
+}
+
+/* The frame holds the ratio so the card does not jump as each screenshot finishes
+ * loading — every face is the same size, whichever the next one turns out to be. */
+.files__card-frame {
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 0.25em;
+  background: color-mix(in srgb, var(--screen-fg) 8%, transparent);
+}
+
+.files__card-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.files__card-name {
+  padding: 0 0.15em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95em;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--screen-fg) 86%, transparent);
+}
+
+/* The detail panel: a single project's page, replacing the grid rather than sliding
+ * beside it, because two panes at this size would each be too small to read. */
+.files__detail {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.65em;
+  padding: 0.8em 0.9em 1em;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.files__detail::-webkit-scrollbar {
+  display: none;
+}
+
+.files__detail .files__back {
+  align-self: flex-start;
+}
+
+.files__detail-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: 0.3em;
+  background: color-mix(in srgb, var(--screen-fg) 8%, transparent);
+}
+
+.files__detail-title {
+  margin: 0.1em 0 0;
+  font-size: 1.5em;
+  line-height: 1.15;
+  color: color-mix(in srgb, var(--screen-fg) 94%, transparent);
+}
+
+.files__detail-role {
+  margin: 0;
+  padding: 0.22em 0.6em;
+  align-self: flex-start;
+  border-radius: 0.9em;
+  background: color-mix(in srgb, var(--screen-accent) 16%, transparent);
+  color: color-mix(in srgb, var(--screen-accent) 84%, var(--screen-fg));
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.files__detail-text {
+  margin: 0;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--screen-fg) 82%, transparent);
+}
+
+.files__action {
+  align-self: flex-start;
+  margin-top: 0.2em;
+  padding: 0.5em 1.1em;
+  border: 1px solid color-mix(in srgb, var(--screen-accent) 58%, transparent);
+  border-radius: 0.3em;
+  background: color-mix(in srgb, var(--screen-accent) 14%, transparent);
+  color: var(--screen-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.files__action:hover {
+  background: color-mix(in srgb, var(--screen-accent) 30%, transparent);
+  color: #fff;
+}
+
+.files__action:focus-visible {
+  outline: 0.08em solid color-mix(in srgb, var(--screen-blue-soft) 90%, transparent);
+  outline-offset: 0.1em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .files__back,
+  .files__entry,
+  .files__card,
+  .files__action {
+    transition: none;
+  }
+}

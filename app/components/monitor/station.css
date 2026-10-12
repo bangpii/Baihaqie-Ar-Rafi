@@ -1,0 +1,1296 @@
+/* MonitorStation — the desk.
+ *
+ *  Normal flow inside `.monitor-reveal`, which owns the fixed positioning and the
+ *  expanding clip. The page itself never scrolls — the hero's dive is wheel-driven
+ *  and the document is already `overflow: hidden` — so this fills the reveal
+ *  outright, and the only scrolling inside the scene is the terminal's own.
+ *
+ *  Vertical flex: the stage takes the slack, the keyboard keeps its natural
+ *  height. The stage is `min-height: 0` because a flex child will otherwise
+ *  refuse to shrink below its content and push the keyboard off-screen. */
+
+/* Three columns across the desk: the specification, the machine, the instructions.
+ *  One row above them for the head.
+ *
+ *  The rails are fixed-width and the rig takes the rest, rather than three equal
+ *  columns or a percentage split. The rig holds a 16:10 monitor and a keyboard whose
+ *  width is a fixed number of rem, so its width is a thing to be decided by what
+ *  remains — giving the rails a percentage of the viewport would make the monitor a
+ *  different size at every window size, and the scene already fits itself to whatever
+ *  box it is handed.
+ *
+ *  Named areas rather than four bare grid children in source order, because the room's
+ *  layers are absolutely positioned and therefore never placed: without the names the
+ *  masthead would take the first cell, the left rail the second, and the whole desk
+ *  would be shuffled one column to the right by scenery that is not even in the flow.
+ *
+ *  `gap` rather than margins: a rail's border is on its own edge, and margins would
+ *  have to be negotiated against the rig to keep the outer padding even. */
+.station {
+  display: grid;
+  grid-template-columns: var(--rail-width) minmax(0, 1fr) var(--rail-width);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "masthead masthead masthead"
+    "left rig right";
+  gap: clamp(0.75rem, 1.8vw, 2rem);
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+  padding: clamp(0.75rem, 1.8vw, 1.75rem) clamp(1rem, 2.4vw, 2.5rem);
+  overflow: hidden;
+
+  /* The room, in three layers: a vignette that recedes the corners, a wall that falls
+   * to a desk somewhere below the keyboard, and an opaque base so the hero is fully
+   * occluded once the reveal has finished. Flat `--background` was doing none of this
+   * — it made the whole desk one field of colour, which is the thing the dive has just
+   * travelled into and the one surface it most needed to not be.
+   *
+   *  The wall is deliberately deeper than the monitor's hardware. `#e7e4dd` on
+   * `#f4f1ea` is a difference of thirteen levels, so on the light theme the cream
+   * machine had almost nothing to read against. `--desk-*` is tuned for that gap
+   * rather than for the page, and the tokens live in `globals.css` so both themes are
+   * one edit each. */
+  background-color: var(--desk-floor);
+  /* The wall, and over it the desk's own surface — see `--desk-plane` in `globals.css`.
+   *
+   *  First in the list, which means painted last, because the band has to match the
+   *  board's rendered tone exactly and the vignette underneath it would otherwise pull
+   *  the rails sixty levels darker than the surface the machines are standing on. The
+   *  two edges it is held to are written by `DeskScene` from the projection, so the flat
+   *  half of the room and the drawn half start at the same line at every window size. */
+  background-image: var(--desk-plane-band), var(--desk-surface);
+
+  /* One knob for both rails. Declared here rather than repeated, so the two columns
+   * cannot drift apart. Sized against the viewport because the rails are real page
+   * chrome, not projected onto the quad — they are not inside the size container, so
+   * `cqw` here would measure the wrong box entirely.
+   *
+   *  Wider than they look like they need to be, on purpose. The scene fits the
+   *  monitor to its *height* — the keyboard takes its share of the viewport below — so
+   *  the stage has width to spare at every size. Taking that spare width into the
+   *  rails is what keeps the placards standing next to the monitor instead of across
+   *  the room from it. */
+  --rail-width: clamp(10.5rem, 20vw, 19rem);
+
+  /* The lane the case stands in, reserved out of the rig rather than taken out of the
+   * monitor's own box. See `tower.css` for why overlapping and shrinking were both
+   * rejected.
+   *
+   *  A share of the rig rather than a rem value, so the case and the monitor keep their
+   *  relationship as the window changes: the lane grows with the desk instead of the
+   *  case being a fixed width that is right on one monitor and absurd on the next.
+   *  The max stops the furniture out-growing the subject on a very wide window — the
+   *  monitor is still the thing this desk is about. The min is not about the buttons:
+   *  `HIT.padPixels` in `TowerScene.tsx` is what makes them aimable, at any lane width.
+   *  It is here so that on a narrow-but-tall window the case is still a case and not a
+ *  thin vertical smudge.
+  *
+  *  37% rather than 20%, and the number is arithmetic rather than taste. Both machines
+  *  are fitted the same way — framed by whichever axis runs out first, then drawn at
+  *  1/1.08 and 1/1.12 of the box they were given — and in a lane this size both run out
+  *  of width, so each drawn height is linear in the width that machine was handed.
+  *  Measured at 1440x900 by projecting both models: the case draws 1.63 x the width it
+  *  is given and uses 79% of its lane, the monitor draws 0.82 x its width and uses 95%
+  *  of its stage. Level tops and bottoms means `1.29 L = 0.77 (stage - L)`, which is
+  *  `L = 37% of the stage`; because both sides are linear in the same stage, one
+  *  percentage holds at every window size rather than only at the one it was measured
+  *  on. Guessed at 32% first, from the two models' raw dimensions instead of from what
+  *  they actually draw, and it left the case 42px short at both ends: centred on the
+  *  monitor, level with nothing.
+  *
+  *  What it buys: the case goes from 190px tall to ~355 and stands on the monitor's desk
+  *  line with its top edge level with the monitor's, instead of floating 300px below it
+  *  on the front edge of the desk. The price is the monitor's width — about 125px of it
+  *  at 1440 — and that is the only thing on this desk that can afford to pay. The max
+  *  keeps the furniture from eating the subject on a very wide window; at 37% a lane is
+  *  no longer a share of the slack but a third of the desk, which is the price of two
+  *  machines standing shoulder to shoulder at the same height. */
+  --tower-lane: clamp(10rem, 37%, 28rem);
+
+  /* How far the case stands out of its lane, towards the monitor.
+   *
+   *  The lane is sized so the case's *drawn* width and the monitor's line up: the case
+   *  fills 79% of the lane, so it is already 21% of the lane — half of it, at the widest
+   *  — standing as empty air between two machines that belong next to each other. Moving
+   *  the case is therefore not a change to the lane (which the keyboard's centring reads,
+   *  and which the stage reserves as padding) but a change to where the case sits inside
+   *  it: the lane keeps holding the case's width and the keyboard keeps being centred on
+   *  the monitor, and only the gap closes.
+   *
+   *  Half the empty air rather than all of it, because the two machines still need to be
+   *  legible as two machines. A shared circuit cable runs between them, and a cable with
+   *  nowhere to go is a cable drawn on top of a machine. */
+  --tower-nudge: clamp(0.5rem, 2.2vw, 1.75rem);
+}
+
+/* --- The head ----------------------------------------------------------------------
+ *
+ *  Number, title, depth. The three things a printed spread puts above its columns, and
+ *  the reason this desk reads as a spread instead of as three panels floating in a
+ *  room.
+ *
+ *  A grid rather than a flex row so the title can hold the middle cell at any width
+ *  and the depth stay hard against the right edge — which is what makes the two read as
+ *  ends of one measure rather than as two loose items with a word in the middle.
+ *
+ *  The depth figure is the only live number on the desk, and it is a number rather than
+ *  a CSS custom property on purpose: the hero writes the zoom's opacity to a property
+ *  every frame, but text cannot be painted from a custom property, so this is the one
+ *  value that has to come through React. The hero quantises it — see `depthFigureFor` —
+ *  so it changes about twenty times over a dive rather than sixty times a second. */
+.station__masthead {
+  grid-area: masthead;
+
+  /* Positioned, for the same reason the rails are: the room's pins and its poster are
+   *  opaque and positioned at `z-index: 0`, and an unpositioned in-flow block paints
+   *  *under* them. The rails carry `z-index: 1` for exactly this; the masthead spans the
+   *  whole desk, so its right end lands squarely on the poster and its type would have
+   *  been behind a sheet of paper. Same one line as the rails, for the same reason. */
+  position: relative;
+  z-index: 1;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: clamp(0.75rem, 2vw, 1.75rem);
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+
+.station__masthead-number {
+  margin: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: color-mix(in srgb, var(--color-accent) 55%, var(--foreground));
+}
+
+/* The one place on the desk set in the page's display face rather than the mono. A
+ *  monitor and a keyboard and two columns of specifications is all one voice, and the
+ *  head is where the desk is allowed to speak its own name once. */
+.station__masthead-title {
+  margin: 0;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: clamp(1.0625rem, 1.9vw, 1.375rem);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  color: var(--foreground);
+}
+
+.station__masthead-depth {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+.station__masthead-depth-label {
+  font-size: 0.625rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+}
+
+/* `from → to` with a rule between them, which is how a camera's range is printed on a
+ *  lens barrel and on a zoom slider: the current figure only means something next to
+ *  the two it sits between. `tabular-nums` so the value does not reflow the row as the
+ *  digits change, and a fixed minimum so a two-digit figure does not visibly shift the
+ *  label above the line it shares. */
+.station__masthead-depth-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 6.5ch;
+  justify-content: flex-end;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+
+.station__masthead-depth-from {
+  color: color-mix(in srgb, var(--foreground) 62%, transparent);
+}
+
+.station__masthead-depth-rule {
+  width: 1.5rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--foreground) 30%, transparent);
+}
+
+/* The rig is the monitor on top of the keyboard: the same vertical flex the station
+   used to be, moved into the middle column so the rails can sit either side of it.
+ *
+   *  The case's lane is *not* a padding on this rig, though it was. The rig's padding
+   *  shifted the stage to the right of the lane and the monitor was then fitted to that
+   *  box and centred inside it — which put the case and the monitor in the same box
+   *  again. The slack a height-fitted monitor leaves is small and even (58px a side at
+   *  1440), so it was never as large as the lane the case had been given, and the case's
+   *  right edge ended up 47px on top of the screen's left edge. Subtracting the lane
+   *  from the wrong side of the measurement.
+   *
+   *  It is the stage's padding instead, so one box holds both machines and they are
+   *  fitted into disjoint parts of it: the case into the lane, the monitor into what is
+   *  left. `.monitor__stage` below carries the same inset, so the monitor's scene is
+   *  measured against the part of the stage the case is not standing in. */
+.station__rig {
+  grid-area: rig;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The desk itself — a third WebGL canvas, and the bottom of the rig's stacking order.
+ *
+ * `z-index: 0` with the stage on 1, the keyboard on 2 and the cable on 3 is the whole
+ * reason the cable running across the board can pass behind the case: all four are
+ * transparent canvases or transparent boxes over the same background, so nothing here
+ * occludes anything by accident. It is `position: absolute` in the rig rather than in
+ * flow because the rig is a flex column holding the stage and the keyboard, and an in-flow
+ * canvas would take a share of the stage's height away from the monitor — which is the
+ * one thing on this desk that must not shrink, and the reason the desk is its own scene
+ * rather than more geometry in the monitor's.
+ *
+ * No `overflow` and no mask. The board used to be drawn *wider* than the rig on purpose,
+ * so that its ends ran out past the frame the way a desk's ends run out past a photograph
+ * of one — except that a canvas clips to its own box, so nothing ran out past anything. It
+ * was a desk drawn edge to edge across the whole column with both ends cropped off, which
+ * is a backdrop rather than a desk.
+ *
+ * `inset: 0` resolves against the rig's *padding* box, not its content box, so the canvas
+ * still spans the rig edge to edge whatever padding the rig itself carries. */
+.station__desk {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.station__desk canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The lane lives here, and the stage's content box is the monitor's half of the desk.
+ * Absolute children — the case, the room, the monitor's own stage — are placed against
+ * the *padding* box, which is why the case can still start at the stage's own left edge
+ * and the monitor can start one lane in, with no offsets in JS and nothing measured
+ * twice. The cable reads this same padding back to find the monitor's centre; see
+ * `MonitorStation`'s cable effect. */
+.station__stage {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  padding-left: var(--tower-lane);
+}
+
+/* The 3D stage ---------------------------------------------------------- */
+
+/* Covers the stage edge to edge and comes *after* the case in the DOM, so it would
+ * otherwise swallow every click aimed at the case's three buttons: a later positioned
+ * sibling wins the hit test, and this one is transparent but not click-through.
+ *
+ *  `none` here rather than on the tower, because the monitor's own screen still has to
+ *  be clickable — and a descendant can re-enable pointer events under an ancestor that
+ *  disabled them, which is exactly what `.monitor__screen-dom` below does for the
+ *  terminal. So this hands the desk back to the case without handing it back from the
+ *  glass. */
+.monitor__stage {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+
+  /* The case's lane, again — the same length `--tower-lane` the case was given, so the
+   * monitor is fitted into the desk that is left after the case has taken its share and
+   * the two can never be drawn on top of each other. Read from the stage's own padding
+   * by the cable effect as well, which is why it is written out twice rather than
+   * measured once and passed down: both numbers come from one variable, and a value
+   * passed through a prop is a value that can be a different one on the other side. */
+  left: var(--tower-lane);
+  pointer-events: none;
+}
+
+.monitor__canvas-layer,
+.monitor__dom-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.monitor__canvas-layer canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* CSS3DRenderer writes its own width/height and a perspective onto this node. */
+.monitor__dom-layer {
+  pointer-events: none;
+}
+
+/* One CSS3DObject unit is one CSS pixel, so this is authored at the fixed size the
+    scene scales to the quad: 1180x665 is `MODEL.screen` at exactly 50 authored pixels
+    to the world unit, so the desktop covers the glass and stops at its edges.
+    `container-type: size` is what lets the terminal size its type in `cqw` and stay
+    proportional at any projected scale. */
+.monitor__screen-dom {
+  width: 1180px;
+  height: 665px;
+  container-type: size;
+  overflow: hidden;
+  pointer-events: auto;
+
+  /* The screen's own surface and text colour, never the page's. `--background` and
+     `--foreground` are a cream page and dark ink; pairing either with a dark Kali
+     desktop is what made the terminal unreadable in the light theme. */
+  background: var(--screen-bg);
+  color: var(--screen-fg);
+
+  /* The panel stops a little short of the quad's bottom edge, and the background is
+     clipped to the content box so that gap stays transparent. The quad itself is
+     unchanged — the CSS3D scale still fits the whole 665px — so the top does not move;
+     only the painted floor rises, which is what uncovers the red power indicator the
+     scene draws on the chin just under this edge. The value is in authored pixels, and
+     the quads scale by `MODEL.screen.w / SCREEN_DOM.w`, so it maps to a little over a
+     third of that on screen. */
+  padding-bottom: 20px;
+  background-clip: content-box;
+}
+
+/* --- What is on the glass -------------------------------------------------- */
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* No GPU: the terminal keeps its real proportions by falling back to viewport
+   units, because there is no quad to be projected into.
+ *
+   The card is still the desktop — `--screen-bg`, not `--background`. The shell's text
+   is `--screen-fg`, and a cream card with light text is the same bug as the terminal
+   had, just moved; the degraded path should look like the same machine with the glass
+   turned off, not like a different component. */
+.screen--flat {
+  --terminal-flat: min(1.05vw, 15px);
+
+  position: absolute;
+  inset: 6% 8%;
+  border-radius: 0.75rem;
+  background: var(--screen-bg);
+  border: 1px solid color-mix(in srgb, var(--screen-line) 55%, transparent);
+}
+
+.screen--flat .shell {
+  font-size: var(--terminal-flat);
+}
+
+.screen--flat .shell__pre {
+  padding: 1.1em 1.2em;
+}
+
+.screen--flat .shell__bar {
+  height: 1.4em;
+}
+
+/* The desktop's content box: everything that is *on* the desktop, under the panel and
+ *  above the wallpaper. Positioned so the windows and the desktop icons are placed
+ *  against it rather than against the whole glass — which is what lets a maximized
+ *  window fill the desktop while the panel stays where it is. */
+.screen__content {
+  position: relative;
+  z-index: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* The Kali panel is the top edge of the glass now, so the shell's own empty strip
+ * would be a second rule one rule below the first. It is still there in every state
+ * that has no panel, which is the shell standing on its own. */
+.screen--desktop .shell__bar {
+  display: none;
+}
+
+/* The desktop. First child and painted under everything else, so the panel and the
+ * windows sit on it rather than beside it — the reason it carries a negative z-index
+ * and the screen is isolated, which keeps the wallpaper from climbing over the panel
+ * the way a plain `z-index: 0` box would (a positioned box paints above static
+ * siblings, which is exactly the wrong order here). */
+.screen--desktop {
+  isolation: isolate;
+  animation: desktop-in 0.4s ease-out both;
+}
+
+.screen__wallpaper {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+
+  /* The project's own artwork is the field; the theme only adds a hard-edged vignette
+     and a breath of red at the very top. Windows carry their own opaque panels, so the
+     field does not have to be darkened for them to read. */
+  background:
+    radial-gradient(125% 110% at 50% 50%, transparent 64%, color-mix(in srgb, var(--screen-bg) 50%, transparent) 100%),
+    linear-gradient(180deg, color-mix(in srgb, var(--screen-accent) 12%, transparent), transparent 24%),
+    url("../../assets/image.jpeg") center / cover no-repeat,
+    var(--screen-bg);
+}
+
+/* The bloom that the desktop fades up through. On the first frame it is most of the
+   screen and the red is nearly solid; it blurs and falls away over a second, which is
+   the "red then out of focus then a desktop" the boot is handing over to. */
+.screen__wallpaper::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--screen-accent) 78%, transparent), transparent 72%);
+  filter: blur(6cqw);
+  animation: wallpaper-settle 1.5s ease-out both;
+}
+
+/* The dragon, huge and almost out of sight in the corner. Faint enough that it never
+   competes with a window, present enough that the desktop is a Kali desktop and not a
+   dark rectangle. */
+.screen__wallpaper-mark {
+  position: absolute;
+  right: -8cqw;
+  bottom: -10cqw;
+  width: 76cqw;
+  height: 76cqw;
+  color: var(--screen-accent);
+  opacity: 0.09;
+  filter: blur(0.15cqw);
+}
+
+@keyframes desktop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes wallpaper-settle {
+  from {
+    opacity: 0.92;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen--desktop,
+  .screen__wallpaper::before {
+    animation: none;
+  }
+
+  /* The bloom is motion's idea of "arriving"; without it the wallpaper is simply the
+     settled field, so the blur it was only there to carry goes too. */
+  .screen__wallpaper::before {
+    opacity: 0;
+  }
+}
+
+/* --- Desktop icons ---------------------------------------------------------- */
+
+/* The bin, sitting where a desktop puts its first icon: top-left, just under the panel.
+ *  Sized in `cqw` like the rest of the glass, so it keeps its proportion to the windows
+ *  at any projected size. It sits under them — `z-index: 1` against their `2` — because a
+ *  window opens *over* the desktop, not beside it. */
+.desktop-icons {
+  position: absolute;
+  z-index: 1;
+  top: 1.2cqw;
+  left: 1.4cqw;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.6cqw;
+}
+
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35em;
+  width: 7cqw;
+  padding: 0.7em 0.4em;
+  border: 1px solid transparent;
+  border-radius: 0.4em;
+  background: transparent;
+  color: color-mix(in srgb, var(--screen-fg) 90%, transparent);
+  font: inherit;
+  font-size: 1.15cqw;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.desktop-icon__icon {
+  width: 2.6cqw;
+  height: 2.6cqw;
+  color: color-mix(in srgb, var(--screen-fg) 86%, transparent);
+  filter: drop-shadow(0 0.15cqw 0.3cqw var(--screen-shadow));
+}
+
+.desktop-icon__label {
+  text-align: center;
+  text-shadow: 0 0.06em 0.2em var(--screen-shadow);
+}
+
+.desktop-icon:hover,
+.desktop-icon:focus-visible {
+  border-color: color-mix(in srgb, var(--screen-accent) 44%, transparent);
+  background: color-mix(in srgb, var(--screen-accent) 16%, transparent);
+}
+
+.desktop-icon:focus-visible {
+  outline: 0.08em solid color-mix(in srgb, var(--screen-blue-soft) 90%, transparent);
+  outline-offset: 0.1em;
+}
+
+.desktop-icon:active {
+  background: color-mix(in srgb, var(--screen-accent) 28%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-icon {
+    transition: none;
+  }
+}
+
+/* --- The rails beside the monitor ------------------------------------------- */
+
+/* A rail is two columns of text standing next to the machine — not a card.
+ *
+ *  They began as bordered cards with padding, and both parts of that were wrong. The
+ *  padding made each rail a third object in the room with a surface of its own,
+ *  competing with the monitor; the border drew a line around nothing. What is left
+ *  separates the two columns by space and by type instead, so the monitor stays the
+ *  only object in the scene with a surface.
+ *
+ *  Everything here is `rem`/`em` rather than `cqw`: these sit outside the
+ *  `container-type: size` quad and are never projected, so scaling them with the type
+ *  inside the monitor would be wrong. */
+.station__rail {
+  /* Positioned, and above the room. `RoomScenery`'s wall is a positioned layer at
+   * `z-index: 0`, and a positioned descendant paints over unpositioned in-flow
+   * content — so without this the shafts, the poster and the two pinned notes would
+   * all sit *on top of* the text standing in front of them. */
+  position: relative;
+  z-index: 1;
+
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Centred vertically against the monitor, which is what "standing next to it" means:
+ * text flush with the floor would be a caption, and a caption is not what this is. */
+.station__rail--left {
+  grid-area: left;
+}
+
+.station__rail--right {
+  grid-area: right;
+}
+
+.station__rail--left,
+.station__rail--right {
+  align-self: center;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A short rule under the title instead of a box around the column. It does the job a
+ * border was doing — marking where this text starts — without drawing an edge that the
+ * reader might mistake for the edge of a window. */
+.station__rail-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-accent) 82%, var(--foreground));
+}
+
+/* A section title *inside* a rail. The rail's own title already draws a rule under
+ * itself, so this one does not — a second rule four lines below the first reads as a
+ * broken divider rather than as a heading. Type alone carries it, at the same tracking
+ * and a size down, which is how a printed spread marks a subsection. */
+.station__rail-subtitle {
+  margin: 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 82%, transparent);
+}
+
+.station__specs {
+  display: grid;
+  margin: 0.9rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+/* The spec sheet's rows: a hairline under each one, so the column reads as a printed
+ *  specification table rather than as labels in a pocket. The under-line is drawn
+ *  below the row's own padding and the row is separated from the next by the same
+ *  margin, so content-to-rule and rule-to-content are even — the old `gap` between
+ *  rows, moved onto the row so the rule can sit inside it. Kept fractional against the
+ *  desk, because the text stands on a surface now and a full divider would read as
+ *  furniture rather than as print. */
+.station__spec {
+  padding-bottom: 0.8rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.station__spec:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+/* Label above value. Side by side, a seven-character label and a ten-character value
+  * in a rail this narrow would force one of them to break mid-word.
+  *
+  * The mix percentage here is contrast, not subtlety. These were written against a flat
+  * cream page, where 38% of the foreground measured about 2.3:1; against the room's
+  * deeper wall that only got worse, and at 9px it has to clear 4.5:1 rather than the 3:1
+  * large text would be allowed. The hierarchy is carried by size, tracking and weight —
+  * the label is quieter than the value because it is smaller and set in caps, not
+  * because it is barely there. At 86% rather than 78% because the rails are centred and
+  * run past the wall-to-desk horizon, so a label near the foot of a rail sits on the
+  * desk: measured at 78% that spot is 4.14:1 on the light theme. */
+.station__spec dt {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 86%, transparent);
+}
+
+.station__spec dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--foreground);
+  text-wrap: pretty;
+}
+
+/* --- The closing note, at the foot of the left rail ------------------------
+ *
+ *  The one piece of prose about the desk rather than about the machine, and it is
+ *  prose instead of a caption because it is an argument: everything here works. A
+ *  specification table cannot say that, which is why it needs words.
+ *
+ *  The lead is set in the page's own sans at rail size and the body below it in mono at
+ *  the size the rest of the rail's small print is set — the two voices a Swiss layout
+ *  uses to say "this is the line that matters" without going bold. */
+.station__caption {
+  margin: 1.5rem 0 0;
+  padding-top: 1.1rem;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+  text-wrap: pretty;
+}
+
+.station__caption-lead {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--foreground);
+}
+
+/* --- The command index -----------------------------------------------------
+ *
+ *  A table, not prose, and the reason is the reader: the commands are the one thing on
+ *  this desk that cannot be discovered by looking at the machine. Everything else —
+ *  the power, the folder, the fan, the keys — is a thing you press and watch. A
+ *  command is a thing you have to already know, so until they know it the terminal is
+ *  closed to them. Printing it turns the first command from a guess into a copy.
+ *
+ *  `dd` sits under `dt` rather than beside it for the same reason the specification's
+ *  labels sit above their values: a rail this narrow cannot hold a six-character
+ *  command and a twenty-character description side by side without breaking one of
+ *  them mid-word. */
+.station__commands {
+  margin-top: 1.3rem;
+}
+
+.station__command-list {
+  display: grid;
+  margin: 0.7rem 0 0;
+}
+
+/* The same datasheet row as the specification's: one hairline per command, so the
+ *  index reads as a printed table whose rows a reader can scan with a ruler instead
+ *  of as a paragraph of small print. The last row closes without a rule, because a
+ *  table that ends on its own top border also reads as a table that is still being
+ *  written. */
+.station__command {
+  padding-bottom: 0.48rem;
+  margin-bottom: 0.48rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.station__command:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.station__command dt {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--color-accent) 40%, var(--foreground));
+}
+
+.station__command dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+  text-wrap: pretty;
+}
+
+.station__rail-text {
+  margin: 0.85rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+  /* Not justified: it stretches the short lines a rail this narrow produces, and the
+     resulting gaps read as holes in the paragraph. */
+  text-wrap: pretty;
+}
+
+/* Below this the two rails and the monitor cannot all hold their shape — the monitor
+   is the point of the scene, and a rail squeezed to a column of fragments beside it
+   is worse than no rail. So the rails go, and the desk becomes what it was before
+   they were added: one machine and one keyboard. The panel and the folder on it are
+   untouched, so the machine is still a Kali desktop. */
+/* --- A shorter desk, printed smaller -----------------------------------------
+ *
+ *  The desk is `100dvh` and never scrolls, so its rails are not a document — they are
+ *  a fixed column of text with a hard ceiling. At 900px tall everything above fits with
+ *  room to spare; measured at 768px the left rail overflowed by 122px and the right by
+ *  88, which meant the closing caption and the last two commands were simply cut off
+ *  with no scrollbar worth the name to reach them.
+ *
+ *  So the columns tighten rather than truncate: leading first, then the gaps between
+ *  rows, then the size of the smallest type on the desk. In that order, because that is
+ *  the order in which they cost the least — leading is air nobody reads, a gap is a
+ *  choice, and the small print is the last thing to go.
+ *
+ *  Nothing here changes the hierarchy, the colours or the measure. It is the same
+ *  spread, set one notch tighter, which is what a designer does with a page that has to
+ *  fit a paper size it was not drawn for. */
+@media (max-height: 880px) {
+  .station__rail-title {
+    padding-bottom: 0.45rem;
+  }
+
+  .station__specs {
+    margin-top: 0.7rem;
+  }
+
+  .station__spec {
+    padding-bottom: 0.55rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .station__spec dd {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .station__rail-text {
+    margin-top: 0.7rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  .station__commands,
+  .station__caption,
+  .tower-legend-block {
+    margin-top: 1.1rem;
+  }
+
+  .station__caption {
+    padding-top: 0.85rem;
+  }
+
+  .station__caption-lead {
+    font-size: 0.875rem;
+  }
+
+  .station__command-list {
+    margin-top: 0.55rem;
+  }
+
+  .station__command {
+    padding-bottom: 0.38rem;
+    margin-bottom: 0.38rem;
+  }
+
+  .station__command dd {
+    font-size: 0.625rem;
+  }
+
+  .tower-legend {
+    gap: 0.35rem;
+    margin-top: 0.8rem;
+  }
+
+  .tower-legend__note {
+    margin-top: 0.6rem;
+    font-size: 0.625rem;
+    line-height: 1.5;
+  }
+}
+
+/* A second notch for the shortest desks that still show the rails — a 768px laptop, a
+ *  half-height window on a large screen. Measured at 1024x768 the left rail was still
+ *  24px over after the first step, which is about one line of caption: the rows lose a
+ *  little padding, the leading tightens again, and the gaps close. Nothing is removed,
+ * because the only things this can drop are the ones the reader came for. */
+@media (max-height: 800px) {
+  .station__spec {
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .station__caption {
+    margin-top: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .tower-legend-block,
+  .station__commands {
+    margin-top: 0.95rem;
+  }
+
+  .tower-legend__row {
+    padding: 0.28rem 0.4rem;
+  }
+
+  .tower-legend__label {
+    font-size: 0.6875rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .station {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+  }
+
+  /* The masthead goes with the rails: a three-column head over a single column of
+   * machine is a head with two empty ends, and the depth figure it exists to show is
+   * still there to be read on the case. */
+  .station__masthead {
+    display: none;
+  }
+
+  .station__rail {
+    display: none;
+  }
+
+  /* And the lane goes with the case — `.tower` is already `display: none` at this
+   * width, so without this the desk would be holding open a gap down its left side for
+   * furniture that is not being drawn. Two declarations because the lane is written on
+   * both the stage's padding and the monitor's inset, and resetting only one of them
+   * leaves the other reserving the gap. */
+  .station__stage {
+    padding-left: 0;
+  }
+
+  .monitor__stage {
+    left: 0;
+  }
+}
+
+/* Standby: the mark, centred, and nothing else.
+ *
+ *  It used to print "no signal" and "press escape to power on" here. That was the
+ *  wrong instinct — a monitor showing nothing is not a page that needs instructions,
+ *  and a reader who has just arrived cannot tell whether the monitor is switched off
+ *  or the site is broken. The logo answers that at a glance, and it is the only thing
+ *  on a dark panel that reads at distance, which is the whole job of a mark.
+ *
+ *  Dim rather than lit: this is a machine asleep with its backlight off, not a splash
+ *  screen. The instruction lives on the desk instead, in real text under the keyboard,
+ *  where it is legible rather than projected. */
+.screen__standby {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* The accent on its own, not mixed towards the page foreground: the earlier
+   * `color-mix(... 62%, var(--foreground))` and `opacity: 0.52` together pulled the
+   * red almost all the way to grey, and a mark on a switched-off screen has no
+   * backlight to help it. Both were doing "be subtle" twice over. */
+  color: var(--screen-accent);
+  filter: drop-shadow(0 0 0.06em color-mix(in srgb, var(--screen-accent) 45%, transparent));
+}
+
+/* The size is set by the component in `em`; what needs fixing here is the line box,
+ * because an inline SVG contributes its ascent and descent to the flex line and the
+ * mark would otherwise sit a few pixels below the true centre. */
+.screen__standby-mark {
+  display: block;
+  line-height: 0;
+
+  /* Nudged left of centre, because the artwork is not balanced inside its own viewBox.
+   * The ink fills its bounding box almost exactly (midpoint 12.03 of 24), but the
+   * *mass* of it does not: the coiled body and the head sit right of centre, putting
+   * the ink centroid at 13.77 — 7.4% of the mark's width to the right. A box-centred
+   * mark therefore reads as pushed right, which is what it looked like.
+   *
+   *  `translateX` in percent resolves against the element's own width, so this is a
+   * fixed fraction of the mark at any size. A margin would not do: on a centred flex
+   * item it shifts the content by half the margin, and it would also have to be
+   * restated in `em` every time the size changed. */
+  transform: translateX(-7.4%);
+}
+
+/* Going down is its own sequence, not a state of this glass: see `ShutdownScreen.tsx`
+ *  and `shutdown.css`, which own the scrim, the mark and the drain as one timeline. */
+
+/* Reflection and scanlines, over the pixels rather than under them. */
+.screen__glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    /* a raking highlight across the upper left, as if from a window */
+    linear-gradient(
+      128deg,
+      var(--screen-glass-sheen) 0%,
+      transparent 34%,
+      transparent 66%,
+      color-mix(in srgb, var(--screen-glass-sheen) 55%, transparent) 100%
+    ),
+    /* scanlines */
+    repeating-linear-gradient(
+      to bottom,
+      var(--screen-glass-scan) 0 1px,
+      transparent 1px 3px
+    );
+
+  /* `screen` because the sheen is light and the desktop underneath is dark, in both
+     themes — which is the thing this rule used to get wrong. It was mixing `--background`
+     into a `screen` blend, so on the light theme it screened cream over the whole
+     desktop and left the scanlines invisible, while the dark theme got the scanlines
+     and no highlight at all: the two themes were showing each other's glass. */
+  opacity: 0.9;
+  mix-blend-mode: screen;
+}
+
+/* The glass darkens as the monitor loses power, so the transition reads as a
+   picture going dark rather than as content being swapped. */
+.station--off .screen__glass {
+  opacity: 0.16;
+}
+
+/* --- Cable ----------------------------------------------------------------- */
+
+/* The display cable, as a WebGL tube, behind the machines.
+ *
+ *  Layered at `z-index: 0` — under the stage, which is every object on the desk — and that
+ *  is the whole point of it. A cable drawn over the monitor ends in mid-air on its front
+ *  face, which reads as a line lying on the screen rather than a plug in its back. Behind
+ *  it, the case occludes where it leaves and the monitor occludes where it arrives, so the
+ *  run disappears into both machines and looks attached to them instead of pasted across
+ *  them. It is a separate canvas from the desk so it can own its own context, but it shares
+ *  the desk's layer: only `.station__cable` — the themed run that stays in front, on the
+ *  open desk below the screen — sits above the machines. */
+.station__cable-3d {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* The canvas fills the host and carries its own size; nothing here may stretch it, or the
+ * one-pixel-to-one-world-unit mapping the cable is drawn with would be scaled twice. */
+.station__cable-3d canvas {
+  display: block;
+}
+
+/* The themed monitor-to-keyboard run, above the machines because it crosses the open desk
+ * in front of them and never overlaps either. */
+.station__cable {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* No viewBox: user units then equal CSS pixels one to one, which is what lets the
+   station hand the path coordinates straight from getBoundingClientRect. */
+/* The one run left in this SVG is the monitor-to-keyboard cable — drawn in the page's own
+ * ink so it follows the theme instead of arriving as a grey line on a cream desk and a
+ * black one on a dark desk. 34% rather than the 26% it was, because a cable that has to be
+ * looked for is not doing its job. The case-to-monitor display cable is not here: it is a
+ * `TubeGeometry` in `CableScene`, so it has a width and a light that a stroked path cannot
+ * give it. */
+.station__cable-line {
+  fill: none;
+  stroke: color-mix(in srgb, var(--foreground) 34%, transparent);
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+/* --- Keyboard -------------------------------------------------------------- */
+
+.station__keyboard {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.5rem, 1.4vh, 1rem);
+
+  /* The gap between the monitor's chin and the back edge of the keyboard.
+   *
+   *  Paid for out of the bottom padding rather than added to it, so the row is exactly
+   *  as tall as it was: the stage above is `flex: 1` and the monitor and the case are
+   *  both fitted to it, so a taller row would quietly shrink both machines to buy a gap
+   *  between them. Moving the same pixels from one edge to the other opens the gap and
+   *  leaves the desk the size it was.
+   *
+   *  This is also what makes the monitor cable visible at all. The run from the monitor
+   *  to the keyboard droops through exactly this band, and while the slab's top edge was
+   *  the row's top edge there was nothing between the two machines for it to be seen in:
+   *  every pixel of it was behind the keyboard. */
+  padding-top: clamp(0.5rem, 2.2vh, 1.5rem);
+  padding-bottom: clamp(0.2rem, 0.5vh, 0.5rem);
+
+  /* The lane again, for the third time, and here it is not about space — it is about
+   * where the slab sits. The stage centres the monitor in what is left of the desk, and
+   * a slab centred in the *whole* desk stands 138px to the left of the machine it
+   * belongs to: a keyboard pointing at nothing. The same padding the stage uses moves
+   * this row's centre onto the monitor's, and the fit below measures the width that is
+   * left over, so the slab is also sized against the monitor rather than against the
+   * case's half of the desk. Both at once is the point — a slab that is centred under
+   * the monitor and scaled to the full desk would be a plank. */
+  padding-left: var(--tower-lane);
+
+  /* A picture of a keyboard, drawn across the full width of the stage so the slab can
+   * centre itself under the monitor — which means this box reaches into the tower's
+   * lane even where there is no keyboard drawn. At `z-index: 2` over the case's hit
+   * layer, it was swallowing every pointermove over the case's lower half: the ring and
+   * the eject still lit, and clicks on them arrived at the desk instead.
+   *
+   *  Nothing in the row's own box is interactive — the row is full-desk width, and
+   *  that width is what reaches into the case's lane. The slab inside re-enables its
+   *  own hit area (see `.station__keyboard-fit` below), so the caps are clickable
+   *  without the lane the case draws in being handed back to the keyboard.
+   *
+   *  Clipped, because nothing inside the row may escape it: the well is an absolute band
+   *  sized *past* the slab (126% × 120%) and without a clip the row's overflow would reach
+   *  over the desk column's own edge and sink into the rails — which is what "the specs
+   *  and the how-to get covered" was. A row that cannot leak also cannot cover text. */
+  pointer-events: none;
+  overflow: clip;
+}
+
+/* The box the slab is *drawn* at, with the authored slab scaled into it from its top
+ *  left corner.
+ *
+ *  This element carries no transform: it is sized by the station to the box the slab
+ *  occupies once magnified, so the row reserves the space the keyboard actually uses.
+ *  The transform lives on `.keyboard` inside it for exactly that reason — a transform on
+ *  this box would scale the *reservation* as well, leaving a hit area a fifth bigger
+ *  than the board it stands for, reaching into the case's lane and over the legend
+ *  below.
+ *
+ *  The origin used to be the bottom edge, with the row laid out against the slab's
+ *  authored height. A transform does not feed back into layout, so any slab drawn
+ *  taller than its authored 172px rode up over the monitor's base — which is why the
+ *  keyboard used to look welded to it, and why the ceiling on its scale used to be 1. */
+.station__keyboard-fit {
+  position: relative;
+}
+
+/* The well the keyboard sits in, drawn behind the slab rather than carved into the board.
+ *
+ *  The board's 3D top is a thin veneer — deep enough to cut a hole and produce walls, but
+ *  every pixel of those walls ends up behind the DOM keyboard, which is drawn over the
+ *  whole centre of the desk. What survives of a cutout on screen is only the band around
+ *  the keys, so the well is sized for that band: wider and taller than the slab, darker
+ *  than the board on every side, with the milled-face cues — a lit rim at the top, a
+ *  floor that falls away toward the front — that make a slot a slot and not a sticker.
+ *  Proportioned to the measured slab (126% across, 120% down), so it reads as a well for
+ *  *these* keys and not a plate that happens to be underneath them. */
+.station__keyboard-well {
+  position: absolute;
+  left: -13%;
+  top: -10%;
+  width: 126%;
+  height: 120%;
+  z-index: 0;
+  border-radius: clamp(0.7rem, 1.6vw, 1.2rem);
+  pointer-events: none;
+
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--desk-plane) 58%, black) 0%,
+    color-mix(in srgb, var(--desk-plane) 30%, black) 34%,
+    color-mix(in srgb, var(--desk-plane) 42%, black) 100%
+  );
+
+  /* The recess: a shadow where the wall meets the surface, a pitch-dark seam under the
+   *  slab's own edges, and a rim that catches the desk light along the top. */
+  box-shadow:
+    inset 0 7px 12px color-mix(in srgb, black 40%, transparent),
+    inset 0 -9px 16px color-mix(in srgb, white 16%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--desk-plane) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--desk-plane) 6%, black);
+}
+
+/* The slab's own box, magnified from its top-left corner so it fills the reservation
+ *  exactly and no more. `absolute` rather than in flow so the wrapper's size comes from
+ *  the station and not from the thing being magnified. */
+.station__keyboard-fit > .keyboard {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: left top;
+  will-change: transform;
+
+  /* The row above is inert because of its *width*, not because of what is in it: the
+   * caps are meant to be clicked — the copy promises it, and the slab's own delegated
+   * handler exists for nothing else. Re-enabled here rather than on the row so the
+   * lane to the left of the slab stays transparent to the case's buttons underneath.
+   *
+   *  On this box rather than on `.keyboard__slab` because a scale transform moves a hit
+   * area with the pixels: the slab is a block in flow and would only claim its own
+   * authored 396px, while the magnified board is 440 of them. */
+  pointer-events: auto;
+}
+
+/* --- The key legend -------------------------------------------------------
+ *
+ *  What the keys that are not letters do, drawn as caps and set in the same type as
+ *  the rails rather than as a projected hint on the glass. It lives *outside*
+ *  `.station__keyboard-fit`, so the keyboard's scale transform does not take it: a
+ *  legend that shrinks to 4px with the slab is no longer a legend, and this is the
+ *  one line on the desk whose whole job is to be read.
+ *
+ *  A wrapping row rather than a grid of four columns, because the actions are words
+ *  of very different lengths in two languages — four rigid columns would leave the
+ *  short one (`run the command`) stranded in a wide cell while `switch the machine on
+ *  or off` broke. Wrapping keeps every row as tight as its own words. */
+.key-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.4rem clamp(0.9rem, 2.2vw, 1.9rem);
+  max-width: 46rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.key-legend__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  transition: opacity 240ms ease;
+}
+
+/* Dimmed, not hidden: the keys are all there in both states, and what changes is
+ *  whether the command line is there to receive them. A row that vanished would say
+ *  the key is missing, which is a different and wrong thing. */
+.key-legend__row[data-dim="true"] {
+  opacity: 0.38;
+}
+
+/* The cap, drawn as a cap: bordered, tracked, and the same size as the small print
+ * around it so the legend and the rail read as one page. `↑` and `↓` are the
+ * keyboard's own arrow glyphs, which is why they are in the copy rather than in a
+ * sentence about arrows. */
+.key-legend__cap {
+  padding: 0.1rem 0.34rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 26%, transparent);
+  border-radius: 0.22rem;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--foreground) 86%, transparent);
+  white-space: nowrap;
+}
+
+.key-legend__action {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+  text-wrap: pretty;
+}
+
+/* Tinted with the machine, for the same reason `.station--on .room__pool` brightens:
+ *  the one row that is live in both states stays neutral, and the rows that only work
+ *  on a running machine take the accent's share of the foreground — measured at 40%,
+ *  which is the floor that still clears 4.5:1 on the desk in both themes. */
+.station--on .key-legend__row:not([data-dim="true"]) .key-legend__cap {
+  border-color: color-mix(in srgb, var(--color-accent) 52%, transparent);
+  color: color-mix(in srgb, var(--color-accent) 40%, var(--foreground));
+}
